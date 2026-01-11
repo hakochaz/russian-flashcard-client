@@ -5,39 +5,69 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  Link,
 } from "react-router";
+
+// Import styles of packages that you've installed.
+// All packages except `@mantine/hooks` require styles imports
+import '@mantine/core/styles.css';
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text } from '@mantine/core';
 
 import type { Route } from "./+types/root";
 import "./app.css";
 
-export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-  },
-];
-
 export function Layout({ children }: { children: React.ReactNode }) {
+  const isClient = typeof document !== "undefined";
+
+  if (!isClient) {
+    return (
+      <html lang="en" {...mantineHtmlProps}>
+        <head>
+          <meta charSet="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <ColorSchemeScript />
+          <Meta />
+          <Links />
+        </head>
+        <body>
+          <MantineProvider>
+            <div className="flex min-h-screen">
+              <aside className="w-56 border-r p-4">
+                <div style={{ height: 60 }} className="flex items-center">
+                  <Text style={{ fontWeight: 700 }}>Russian Flashcards</Text>
+                </div>
+                <nav className="mt-4 flex flex-col gap-2">
+                  <Link to="/" className="px-2 py-1 rounded hover:bg-gray-100">All Sentences</Link>
+                  <Link to="/search" className="px-2 py-1 rounded hover:bg-gray-100">Search</Link>
+                </nav>
+              </aside>
+
+              <main className="flex-1 p-6">{children}</main>
+            </div>
+          </MantineProvider>
+          <ScrollRestoration />
+          <Scripts />
+        </body>
+      </html>
+    );
+  }
+
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        {children}
-        <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
+    <MantineProvider>
+      <div className="flex min-h-screen">
+        <aside className="w-56 border-r p-4">
+          <div style={{ height: 60 }} className="flex items-center">
+            <Text style={{ fontWeight: 700 }}>Russian Flashcards</Text>
+          </div>
+          <nav className="mt-4 flex flex-col gap-2">
+            <Link to="/" className="px-2 py-1 rounded hover:bg-gray-100">All Sentences</Link>
+            <Link to="/search" className="px-2 py-1 rounded hover:bg-gray-100">Search</Link>
+          </nav>
+        </aside>
+
+        <main className="flex-1 p-6">{children}</main>
+      </div>
+    </MantineProvider>
   );
 }
 
@@ -73,3 +103,4 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     </main>
   );
 }
+

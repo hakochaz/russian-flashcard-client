@@ -38,6 +38,28 @@ async function fetchPhraseById(cardId: string): Promise<Phrase | null> {
   }
 }
 
+// API function to fetch total card count
+async function fetchCardCount(): Promise<number | null> {
+  try {
+    const response = await fetch(`http://localhost:7071/api/table/Examples/count`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    return data.rowCount as number;
+  } catch (error) {
+    console.error("Failed to fetch card count:", error);
+    return null;
+  }
+}
+
 interface FlashcardProps {
   phrase: Phrase;
   selectedWord: string;
@@ -330,10 +352,20 @@ export default function AllSentences() {
   const [isLoading, setIsLoading] = useState(true);
   const [phraseLoading, setPhraseLoading] = useState(false);
   const [currentPhrase, setCurrentPhrase] = useState<Phrase | null>(null);
-  const [nextAvailable, setNextAvailable] = useState(true);
+  const [totalCards, setTotalCards] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [goToCardInput, setGoToCardInput] = useState("");
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
+
+  // Load total card count on mount
+  useEffect(() => {
+    const loadCardCount = async () => {
+      const count = await fetchCardCount();
+      setTotalCards(count);
+    };
+
+    loadCardCount();
+  }, []);
 
   // Load phrase when currentCardId changes
   useEffect(() => {
@@ -343,9 +375,6 @@ export default function AllSentences() {
       const phrase = await fetchPhraseById(currentCardId);
       if (phrase) {
         setCurrentPhrase(phrase);
-        // Check if next card exists
-        const nextPhrase = await fetchPhraseById(String(parseInt(currentCardId) + 1));
-        setNextAvailable(nextPhrase !== null);
       } else {
         setError("Card not found");
         setCurrentPhrase(null);
@@ -405,19 +434,23 @@ export default function AllSentences() {
   };
 
   const handleNext = () => {
-    if (nextAvailable) {
+    if (!isAtLastCard) {
       const nextId = parseInt(currentCardId) + 1;
       setCurrentCardId(String(nextId));
     }
   };
 
   const isAtFirstCard = currentCardId === "1";
+  const isAtLastCard = totalCards !== null && parseInt(currentCardId) === totalCards;
 
   const handleGoToCard = () => {
     const cardId = goToCardInput.trim();
     if (cardId && /^\d+$/.test(cardId)) {
-      setCurrentCardId(cardId);
-      setGoToCardInput("");
+      const cardNum = parseInt(cardId);
+      if (totalCards === null || (cardNum >= 1 && cardNum <= totalCards)) {
+        setCurrentCardId(cardId);
+        setGoToCardInput("");
+      }
     }
   };
 
@@ -433,7 +466,7 @@ export default function AllSentences() {
           </div>
           <Group gap="xs" wrap="nowrap">
             <TextInput
-              placeholder="Card ID"
+              placeholder="Card No"
               value={goToCardInput}
               onChange={(e) => setGoToCardInput(e.currentTarget.value)}
               onKeyPress={(e) => {
@@ -516,14 +549,14 @@ export default function AllSentences() {
                   Previous
                 </Button>
                 <Text c="dimmed">
-                  Card ID: {currentCardId}
+                  {currentCardId} {totalCards !== null ? `/ ${totalCards}` : ""}
                 </Text>
                 <Button
                   variant="subtle"
                   onClick={handleNext}
-                  disabled={!nextAvailable}
+                  disabled={isAtLastCard}
                 >
-                  {nextAvailable ? "Next" : "Not available"}
+                  {isAtLastCard ? "Last Card" : "Next"}
                 </Button>
               </Group>
             )}

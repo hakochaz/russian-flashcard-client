@@ -1,7 +1,7 @@
 import type { Route } from "./+types/search";
-import { Container, Title, Text, Button, Paper, Group, Stack, TextInput } from "@mantine/core";
+import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox } from "@mantine/core";
 import { useState } from "react";
-import { fetchWordData, searchExamples, type Phrase, type WordData } from "../api/api";
+import { fetchWordData, searchExamples, fetchWordVariations, type Phrase, type WordData } from "../api/api";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
 
@@ -19,6 +19,7 @@ export default function Search() {
   const [selectedWordDataList, setSelectedWordDataList] = useState<WordData[]>([]);
   const [currentSelectedWordIndex, setCurrentSelectedWordIndex] = useState(0);
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
+  const [searchAllForms, setSearchAllForms] = useState(false);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -31,8 +32,33 @@ export default function Search() {
     setSelectedWords([]);
 
     try {
-      const data = await searchExamples(searchQuery);
-      setResults(data);
+      let allResults: Phrase[] = [];
+
+      if (searchAllForms) {
+        // Fetch word variations
+        const variations = await fetchWordVariations(searchQuery);
+        
+        // Search for all variations
+        const searchPromises = variations.map(variation => searchExamples(variation));
+        const resultsArray = await Promise.all(searchPromises);
+        
+        // Concatenate all results and remove duplicates
+        const seenIds = new Set<string>();
+        allResults = resultsArray
+          .flat()
+          .filter(phrase => {
+            if (seenIds.has(phrase.CardId)) {
+              return false;
+            }
+            seenIds.add(phrase.CardId);
+            return true;
+          });
+      } else {
+        // Regular single search
+        allResults = await searchExamples(searchQuery);
+      }
+
+      setResults(allResults);
     } catch (error) {
       console.error("Failed to search:", error);
       setResults([]);
@@ -128,6 +154,12 @@ export default function Search() {
             Search
           </Button>
         </Group>
+
+        <Checkbox
+          label="Search all word forms"
+          checked={searchAllForms}
+          onChange={(e) => setSearchAllForms(e.currentTarget.checked)}
+        />
 
         {hasSearched && !isSearching && results.length === 0 && (
           <Paper p="lg" radius="md" withBorder>

@@ -119,4 +119,28 @@ export async function searchExamples(query: string): Promise<Phrase[]> {
   }
 }
 
+// API function to fetch word variations
+export async function fetchWordVariations(word: string): Promise<string[]> {
+  try {
+    const response = await fetch(`http://localhost:7071/api/russian/variations?word=${encodeURIComponent(word)}`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Failed to fetch word variations:", error);
+    return [];
+  }
+}
+
 export type { Phrase, WordData };

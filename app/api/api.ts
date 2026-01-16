@@ -1,3 +1,5 @@
+import { apiBaseUrl } from "../auth/authConfig";
+
 interface Phrase {
   CardId: string;
   Phrase: string;
@@ -13,14 +15,16 @@ interface WordData {
 }
 
 // API function to fetch phrase by ID
-export async function fetchPhraseById(cardId: string): Promise<Phrase | null> {
+export async function fetchPhraseById(cardId: string, bearerToken?: string): Promise<Phrase | null> {
   try {
-    const response = await fetch(`http://localhost:7071/api/entity/Examples/${cardId}`, {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/entity/Examples/${cardId}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
       method: 'GET',
       mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
     if (!response.ok) {
       console.error(`API error: ${response.status}`);
@@ -35,14 +39,16 @@ export async function fetchPhraseById(cardId: string): Promise<Phrase | null> {
 }
 
 // API function to fetch total card count
-export async function fetchCardCount(): Promise<number | null> {
+export async function fetchCardCount(bearerToken?: string): Promise<number | null> {
   try {
-    const response = await fetch(`http://localhost:7071/api/table/Examples/count`, {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/table/Examples/count`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
       method: 'GET',
       mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
     if (!response.ok) {
       console.error(`API error: ${response.status}`);
@@ -57,17 +63,19 @@ export async function fetchCardCount(): Promise<number | null> {
 }
 
 // API function to fetch word analysis data
-export async function fetchWordData(word: string, sentence: string): Promise<WordData> {
+export async function fetchWordData(word: string, sentence: string, bearerToken?: string): Promise<WordData> {
   // Remove punctuation from the end of the word (commas, periods, etc.)
   const cleanWord = word.replace(/[,\.!?;:—–-]+$/, '');
   
   try {
-    const response = await fetch(`http://localhost:7071/api/russian/analyze-word`, {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/analyze-word`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
       method: 'POST',
       mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         sentence: sentence,
         word: cleanWord,
@@ -96,14 +104,16 @@ export async function fetchWordData(word: string, sentence: string): Promise<Wor
 }
 
 // API function to search for examples
-export async function searchExamples(query: string): Promise<Phrase[]> {
+export async function searchExamples(query: string, bearerToken?: string): Promise<Phrase[]> {
   try {
-    const response = await fetch(`http://localhost:7071/api/search/Examples?q=${encodeURIComponent(query)}`, {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/search/Examples?q=${encodeURIComponent(query)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
       method: 'GET',
       mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -120,14 +130,16 @@ export async function searchExamples(query: string): Promise<Phrase[]> {
 }
 
 // API function to fetch word variations
-export async function fetchWordVariations(word: string): Promise<string[]> {
+export async function fetchWordVariations(word: string, bearerToken?: string): Promise<string[]> {
   try {
-    const response = await fetch(`http://localhost:7071/api/russian/variations?word=${encodeURIComponent(word)}`, {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/variations?word=${encodeURIComponent(word)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
       method: 'GET',
       mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {

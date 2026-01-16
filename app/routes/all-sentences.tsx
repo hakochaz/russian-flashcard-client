@@ -2,6 +2,7 @@ import type { Route } from "./+types/all-sentences";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput } from "@mantine/core";
 import { useState, useEffect } from "react";
 import { fetchPhraseById, fetchCardCount, fetchWordData, type Phrase, type WordData } from "../api/api";
+import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
 
@@ -22,29 +23,43 @@ export default function AllSentences() {
   const [goToCardInput, setGoToCardInput] = useState("");
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
 
+  const { acquireToken } = useAuth();
+
   // Load total card count on mount
   useEffect(() => {
     const loadCardCount = async () => {
-      const count = await fetchCardCount();
-      setTotalCards(count);
+      try {
+        const token = await acquireToken();
+        const count = await fetchCardCount(token);
+        setTotalCards(count);
+      } catch (err) {
+        // acquireToken may redirect the page (AuthProvider throws), ignore here
+        console.debug("Could not acquire token for card count", err);
+      }
     };
 
     loadCardCount();
-  }, []);
+  }, [acquireToken]);
 
   // Load phrase when currentCardId changes
   useEffect(() => {
     const loadPhrase = async () => {
       setPhraseLoading(true);
       setError(null);
-      const phrase = await fetchPhraseById(currentCardId);
-      if (phrase) {
-        setCurrentPhrase(phrase);
-      } else {
-        setError("Card not found");
-        setCurrentPhrase(null);
+      try {
+        const token = await acquireToken();
+        const phrase = await fetchPhraseById(currentCardId, token);
+        if (phrase) {
+          setCurrentPhrase(phrase);
+        } else {
+          setError("Card not found");
+          setCurrentPhrase(null);
+        }
+      } catch (err) {
+        console.debug("Could not acquire token or fetch phrase", err);
+      } finally {
+        setPhraseLoading(false);
       }
-      setPhraseLoading(false);
     };
 
     loadPhrase();
@@ -57,10 +72,19 @@ export default function AllSentences() {
     
     try {
       if (currentPhrase) {
-        const dataList = await Promise.all(
-          words.map(word => fetchWordData(word, currentPhrase.Phrase))
-        );
-        setSelectedWordDataList(dataList);
+        try {
+          const token = await acquireToken();
+          const dataList = await Promise.all(
+            words.map(word => fetchWordData(word, currentPhrase.Phrase, token))
+          );
+          setSelectedWordDataList(dataList);
+        } catch (err) {
+          console.debug("Could not acquire token for word data", err);
+          const dataList = await Promise.all(
+            words.map(word => fetchWordData(word, currentPhrase.Phrase))
+          );
+          setSelectedWordDataList(dataList);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch word data:", error);

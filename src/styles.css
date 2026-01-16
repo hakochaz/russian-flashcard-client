@@ -1,0 +1,10 @@
+/* Minimal client styles (imports Mantine styles from app/root.tsx as well) */
+@import url('/app.css');
+
+html,body,#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}

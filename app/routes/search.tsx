@@ -2,6 +2,7 @@ import type { Route } from "./+types/search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox } from "@mantine/core";
 import { useState } from "react";
 import { fetchWordData, searchExamples, fetchWordVariations, type Phrase, type WordData } from "../api/api";
+import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
 
@@ -20,42 +21,55 @@ export default function Search() {
   const [currentSelectedWordIndex, setCurrentSelectedWordIndex] = useState(0);
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
   const [searchAllForms, setSearchAllForms] = useState(false);
+  const { acquireToken } = useAuth();
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      return;
-    }
-
     setIsSearching(true);
     setHasSearched(true);
-    setCurrentResultIndex(0);
-    setSelectedWords([]);
+    let allResults: Phrase[] = [];
 
     try {
-      let allResults: Phrase[] = [];
-
       if (searchAllForms) {
-        // Fetch word variations
-        const variations = await fetchWordVariations(searchQuery);
-        
-        // Search for all variations
-        const searchPromises = variations.map(variation => searchExamples(variation));
-        const resultsArray = await Promise.all(searchPromises);
-        
-        // Concatenate all results and remove duplicates
-        const seenIds = new Set<string>();
-        allResults = resultsArray
-          .flat()
-          .filter(phrase => {
-            if (seenIds.has(phrase.CardId)) {
-              return false;
-            }
-            seenIds.add(phrase.CardId);
-            return true;
-          });
+        // Fetch word variations and search them (try with token, fall back without)
+        try {
+          const token = await acquireToken();
+          const variations = await fetchWordVariations(searchQuery, token);
+
+          const resultsArray = await Promise.all(
+            variations.map((variation) => searchExamples(variation, token))
+          );
+
+          const seenIds = new Set<string>();
+          allResults = resultsArray
+            .flat()
+            .filter((phrase) => {
+              if (seenIds.has(phrase.CardId)) return false;
+              seenIds.add(phrase.CardId);
+              return true;
+            });
+        } catch (err) {
+          console.debug("Could not acquire token for variations search, falling back:", err);
+          const variations = await fetchWordVariations(searchQuery);
+          const resultsArray = await Promise.all(
+            variations.map((v) => searchExamples(v))
+          );
+          const seenIds = new Set<string>();
+          allResults = resultsArray
+            .flat()
+            .filter((phrase) => {
+              if (seenIds.has(phrase.CardId)) return false;
+              seenIds.add(phrase.CardId);
+              return true;
+            });
+        }
       } else {
-        // Regular single search
-        allResults = await searchExamples(searchQuery);
+        try {
+          const token = await acquireToken();
+          allResults = await searchExamples(searchQuery, token);
+        } catch (err) {
+          console.debug("Could not acquire token for search", err);
+          allResults = await searchExamples(searchQuery);
+        }
       }
 
       setResults(allResults);
@@ -75,10 +89,19 @@ export default function Search() {
     try {
       if (results.length > 0 && currentResultIndex < results.length) {
         const currentPhrase = results[currentResultIndex];
-        const dataList = await Promise.all(
-          words.map(word => fetchWordData(word, currentPhrase.Phrase))
-        );
-        setSelectedWordDataList(dataList);
+        try {
+          const token = await acquireToken();
+          const dataList = await Promise.all(
+            words.map(word => fetchWordData(word, currentPhrase.Phrase, token))
+          );
+          setSelectedWordDataList(dataList);
+        } catch (err) {
+          console.debug("Could not acquire token for word data", err);
+          const dataList = await Promise.all(
+            words.map(word => fetchWordData(word, currentPhrase.Phrase))
+          );
+          setSelectedWordDataList(dataList);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch word data:", error);

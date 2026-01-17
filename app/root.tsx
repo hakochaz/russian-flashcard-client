@@ -22,6 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <nav className="mt-4 flex flex-col gap-2">
             <Link to="/" className="px-2 py-1 rounded hover:bg-gray-100">All Sentences</Link>
             <Link to="/search" className="px-2 py-1 rounded hover:bg-gray-100">Search</Link>
+            <Link to="/create" className="px-2 py-1 rounded hover:bg-gray-100">Create</Link>
           </nav>
         </aside>
         <main className="flex-1 p-6">{children}</main>

@@ -155,4 +155,31 @@ export async function fetchWordVariations(word: string, bearerToken?: string): P
   }
 }
 
+// API function to synthesize audio for a sentence
+export async function synthesizeSentenceAudio(sentence: string, bearerToken?: string): Promise<string | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/synthesize`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ sentence }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.url || null;
+  } catch (error) {
+    console.error("Failed to synthesize audio:", error);
+    return null;
+  }
+}
+
 export type { Phrase, WordData };

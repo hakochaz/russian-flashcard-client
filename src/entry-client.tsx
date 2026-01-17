@@ -5,6 +5,7 @@ import AuthProvider from "../app/auth/AuthProvider";
 import { Layout } from "../app/root";
 import AllSentences from "../app/routes/all-sentences";
 import Search from "../app/routes/search";
+import Create from "../app/routes/create";
 import "../app.css";
 
 const router = createBrowserRouter([
@@ -17,9 +18,10 @@ const router = createBrowserRouter([
         </Layout>
       </AuthProvider>
     ),
-    children: [
+      children: [
       { index: true, element: <AllSentences /> },
       { path: "search", element: <Search /> },
+      { path: "create", element: <Create /> },
     ],
   },
 ]);

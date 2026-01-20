@@ -40,6 +40,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <ColorSchemeScript />
           <Meta />
           <Links />
+          <script async src="https://cse.google.com/cse.js?cx=f1a874e493dc94593"></script>
         </head>
         <body>
           <AuthProvider>{layout}</AuthProvider>

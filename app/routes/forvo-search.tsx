@@ -216,6 +216,7 @@ export default function ForvoSearch() {
                       wordData={selectedWordDataList[currentSelectedWordIndex]}
                       isLoading={false}
                       onBack={handleBackToSentence}
+                      isForvoAudio={true}
                     />
 
                     <Group justify="space-between" mt="xl">

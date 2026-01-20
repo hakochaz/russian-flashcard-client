@@ -1,5 +1,6 @@
 import { Button, Paper, Group, Stack, CopyButton, ActionIcon, Tooltip, Text } from "@mantine/core";
 import type { Phrase, WordData } from "../api/api";
+import { GoogleImageSearch } from "./GoogleImageSearch";
 
 interface FlashcardProps {
   phrase: Phrase;
@@ -7,9 +8,10 @@ interface FlashcardProps {
   wordData: WordData | null;
   isLoading: boolean;
   onBack: () => void;
+  isForvoAudio?: boolean;
 }
 
-export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack }: FlashcardProps) {
+export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, isForvoAudio = false }: FlashcardProps) {
   return (
     <Paper p="lg" radius="md" withBorder>
       <Stack gap="md">
@@ -159,7 +161,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack }:
                     <source src={phrase.Audio} type="audio/mpeg" />
                     Your browser does not support the audio element.
                   </audio>
-                  <CopyButton value={phrase.Audio + '.mp3'}>
+                  <CopyButton value={isForvoAudio ? phrase.Audio + '.mp3' : phrase.Audio}>
                     {({ copied, copy }) => (
                       <Tooltip label={copied ? "Copied" : "Copy"} withArrow position="left">
                         <ActionIcon
@@ -180,6 +182,8 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack }:
           <Text c="red">Failed to load word data</Text>
         )}
       </Stack>
+      
+      {wordData && <GoogleImageSearch searchQuery={wordData.baseForm} />}
     </Paper>
   );
 }

@@ -159,7 +159,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack }:
                     <source src={phrase.Audio} type="audio/mpeg" />
                     Your browser does not support the audio element.
                   </audio>
-                  <CopyButton value={phrase.Audio}>
+                  <CopyButton value={phrase.Audio + '.mp3'}>
                     {({ copied, copy }) => (
                       <Tooltip label={copied ? "Copied" : "Copy"} withArrow position="left">
                         <ActionIcon

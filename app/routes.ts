@@ -4,4 +4,5 @@ export default [
   { file: "routes/all-sentences.tsx", index: true },
   { file: "routes/search.tsx", path: "/search" },
   { file: "routes/create.tsx", path: "/create" },
+  { file: "routes/forvo-search.tsx", path: "/forvo-search" },
 ] satisfies RouteConfig;

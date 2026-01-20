@@ -14,6 +14,37 @@ interface WordData {
   russianMeaning: string;
 }
 
+interface ForvoSearchResult {
+  phrase: string;
+  audio: string;
+}
+
+// API function to search Forvo for a phrase
+export async function searchForvoPhrase(phrase: string, bearerToken?: string): Promise<ForvoSearchResult[]> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/forvo/search/${encodeURIComponent(phrase)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Failed to search Forvo:", error);
+    return [];
+  }
+}
+
 // API function to fetch phrase by ID
 export async function fetchPhraseById(cardId: string, bearerToken?: string): Promise<Phrase | null> {
   try {
@@ -182,4 +213,31 @@ export async function synthesizeSentenceAudio(sentence: string, bearerToken?: st
   }
 }
 
-export type { Phrase, WordData };
+// API function to get sentence with stress marks
+export async function getStressedSentence(sentence: string, bearerToken?: string): Promise<string | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/stress`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ sentence }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.stressed || null;
+  } catch (error) {
+    console.error("Failed to get stressed sentence:", error);
+    return null;
+  }
+}
+
+export type { Phrase, WordData, ForvoSearchResult };

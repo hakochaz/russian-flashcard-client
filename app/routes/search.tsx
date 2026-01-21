@@ -26,6 +26,7 @@ export default function Search() {
   const handleSearch = async () => {
     setIsSearching(true);
     setHasSearched(true);
+    handleBackToSentence();
     let allResults: Phrase[] = [];
 
     try {

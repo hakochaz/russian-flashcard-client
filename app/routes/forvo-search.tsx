@@ -1,7 +1,7 @@
 import type { Route } from "./+types/forvo-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox } from "@mantine/core";
 import { useState } from "react";
-import { searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, type Phrase, type WordData, type ForvoSearchResult } from "../api/api";
+import { searchForvoPhrase, fetchWordData, fetchWordVariations, type Phrase, type WordData, type ForvoSearchResult } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -26,6 +26,7 @@ export default function ForvoSearch() {
   const handleSearch = async () => {
     setIsSearching(true);
     setHasSearched(true);
+    handleBackToSentence();
     let allResults: Phrase[] = [];
 
     try {
@@ -97,18 +98,17 @@ export default function ForvoSearch() {
       if (results.length > 0 && currentResultIndex < results.length) {
         const currentPhrase = results[currentResultIndex];
         const token = await acquireToken();
-        const [dataList, stressedSentence] = await Promise.all([
-          Promise.all(words.map(word => fetchWordData(word, currentPhrase.Phrase, token))),
-          getStressedSentence(currentPhrase.Phrase, token)
-        ]);
+        const dataList = await Promise.all(
+          words.map(word => fetchWordData(word, currentPhrase.Phrase, token))
+        );
         setSelectedWordDataList(dataList);
         
-        // Update the phrase with stressed sentence but keep the existing Forvo audio
+        // Set PhraseStress to the same as Phrase
         setResults(prevResults => {
           const newResults = [...prevResults];
           newResults[currentResultIndex] = {
             ...newResults[currentResultIndex],
-            PhraseStress: stressedSentence || newResults[currentResultIndex].PhraseStress
+            PhraseStress: newResults[currentResultIndex].Phrase
           };
           return newResults;
         });

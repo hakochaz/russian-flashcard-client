@@ -1,7 +1,7 @@
 import type { Route } from "./+types/create";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput } from "@mantine/core";
 import { useState } from "react";
-import { fetchWordData, synthesizeSentenceAudio, getStressedSentence, type Phrase, type WordData } from "../api/api";
+import { fetchWordData, synthesizeSentenceAudio, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -43,10 +43,9 @@ export default function Create() {
       if (currentPhrase) {
         try {
           const token = await acquireToken();
-          const [dataList, audioUrl, stressedSentence] = await Promise.all([
+          const [dataList, audioUrl] = await Promise.all([
             Promise.all(words.map(word => fetchWordData(word, currentPhrase.Phrase, token))),
-            synthesizeSentenceAudio(currentPhrase.Phrase, token),
-            getStressedSentence(currentPhrase.Phrase, token)
+            synthesizeSentenceAudio(currentPhrase.Phrase, token)
           ]);
           setSelectedWordDataList(dataList);
           setCurrentPhrase(prev => {
@@ -54,14 +53,13 @@ export default function Create() {
             return {
               ...prev,
               Audio: audioUrl || prev.Audio,
-              PhraseStress: stressedSentence || prev.PhraseStress
+              PhraseStress: prev.Phrase
             };
           });
         } catch (err) {
-          const [dataList, audioUrl, stressedSentence] = await Promise.all([
+          const [dataList, audioUrl] = await Promise.all([
             Promise.all(words.map(word => fetchWordData(word, currentPhrase.Phrase))),
-            synthesizeSentenceAudio(currentPhrase.Phrase),
-            getStressedSentence(currentPhrase.Phrase)
+            synthesizeSentenceAudio(currentPhrase.Phrase)
           ]);
           setSelectedWordDataList(dataList);
           setCurrentPhrase(prev => {
@@ -69,7 +67,7 @@ export default function Create() {
             return {
               ...prev,
               Audio: audioUrl || prev.Audio,
-              PhraseStress: stressedSentence || prev.PhraseStress
+              PhraseStress: prev.Phrase
             };
           });
         }

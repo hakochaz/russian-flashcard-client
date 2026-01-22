@@ -183,7 +183,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, i
         )}
       </Stack>
       
-      {wordData && <GoogleImageSearch searchQuery={wordData.baseForm} />}
+      {wordData && <GoogleImageSearch searchQuery={selectedWord} />}
     </Paper>
   );
 }

@@ -19,6 +19,20 @@ interface ForvoSearchResult {
   audio: string;
 }
 
+interface Pronunciation {
+  audioMp3: string;
+  sex: string;
+  username: string;
+  country: string;
+}
+
+interface ShadowingEntity {
+  entity: {
+    Sentence: string;
+  };
+  pronunciations: Pronunciation[];
+}
+
 // API function to search Forvo for a phrase
 export async function searchForvoPhrase(phrase: string, bearerToken?: string): Promise<ForvoSearchResult[]> {
   try {
@@ -267,4 +281,52 @@ export async function fetchPhraseBaseForm(sentence: string, words: string, beare
   }
 }
 
-export type { Phrase, WordData, ForvoSearchResult };
+// API function to fetch shadowing entity by ID
+export async function fetchShadowingById(rowKey: string, bearerToken?: string): Promise<ShadowingEntity | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/shadowing/${encodeURIComponent(rowKey)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    return data as ShadowingEntity;
+  } catch (error) {
+    console.error("Failed to fetch shadowing entity:", error);
+    return null;
+  }
+}
+
+// API function to fetch total shadowing count
+export async function fetchShadowingCount(bearerToken?: string): Promise<number | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/table/shadowing/count`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    return data.rowCount as number;
+  } catch (error) {
+    console.error("Failed to fetch shadowing count:", error);
+    return null;
+  }
+}
+
+export type { Phrase, WordData, ForvoSearchResult, Pronunciation, ShadowingEntity };

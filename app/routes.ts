@@ -6,4 +6,5 @@ export default [
   { file: "routes/create.tsx", path: "/create" },
   { file: "routes/create-grammar.tsx", path: "/create-grammar" },
   { file: "routes/forvo-search.tsx", path: "/forvo-search" },
+  { file: "routes/shadowing.tsx", path: "/shadowing" },
 ] satisfies RouteConfig;

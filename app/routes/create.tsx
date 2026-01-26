@@ -7,7 +7,7 @@ import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Create" }];
+  return [{ title: "Create Sentence Card" }];
 }
 
 export default function Create() {
@@ -105,7 +105,7 @@ export default function Create() {
     <Container size="md" className="pt-16 pb-16">
       <Stack gap="lg">
         <div>
-          <Title order={2}>Create</Title>
+          <Title order={2}>Create Sentence Cards</Title>
           <Text mt="sm" c="dimmed">
             Enter a sentence and select words to create flashcards
           </Text>

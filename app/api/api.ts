@@ -240,4 +240,31 @@ export async function getStressedSentence(sentence: string, bearerToken?: string
   }
 }
 
+// API function to get phrase base form
+export async function fetchPhraseBaseForm(sentence: string, words: string, bearerToken?: string): Promise<{ phraseAnswer: string; bracketedSentence: string; baseForm: string } | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/phrase-base-form`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ sentence, words }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Failed to fetch phrase base form:", error);
+    return null;
+  }
+}
+
 export type { Phrase, WordData, ForvoSearchResult };

@@ -1,7 +1,7 @@
 import type { Route } from "./+types/shadowing";
-import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, ActionIcon } from "@mantine/core";
+import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, ActionIcon, Select, Textarea } from "@mantine/core";
 import { useState, useEffect, useRef } from "react";
-import { fetchShadowingById, fetchShadowingCount, type ShadowingEntity, type Pronunciation } from "../api/api";
+import { addShadowingEntry, fetchShadowingById, fetchShadowingCount, type ShadowingEntity, type Pronunciation } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 
 export function meta({}: Route.MetaArgs) {
@@ -18,6 +18,12 @@ export default function Shadowing() {
   const [goToItemInput, setGoToItemInput] = useState("");
   const [playCount, setPlayCount] = useState(0);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<"view" | "add">("view");
+  const [newSentence, setNewSentence] = useState("");
+  const [newDifficulty, setNewDifficulty] = useState<"easy" | "medium" | "hard">("easy");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
 
   const { acquireToken } = useAuth();
@@ -56,6 +62,8 @@ export default function Shadowing() {
 
   // Load entity when currentRowId changes
   useEffect(() => {
+    if (viewMode !== "view") return;
+
     const loadEntity = async () => {
       setEntityLoading(true);
       setError(null);
@@ -76,7 +84,7 @@ export default function Shadowing() {
     };
 
     loadEntity();
-  }, [currentRowId, acquireToken]);
+  }, [currentRowId, acquireToken, viewMode]);
 
   const handlePrevious = () => {
     const prevId = parseInt(currentRowId) - 1;
@@ -106,36 +114,127 @@ export default function Shadowing() {
     }
   };
 
+  const handleAddSubmit = async () => {
+    if (!newSentence.trim()) {
+      setSubmitError("Sentence is required");
+      setSubmitSuccess(null);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    try {
+      const token = await acquireToken();
+      const result = await addShadowingEntry(newSentence.trim(), newDifficulty, token);
+
+      if (!result) {
+        setSubmitError("Could not add sentence");
+        return;
+      }
+
+      setSubmitSuccess("Sentence added successfully");
+      setNewSentence("");
+      setNewDifficulty("easy");
+      setTotalItems(prev => (prev !== null ? prev + 1 : prev));
+    } catch (err) {
+      console.debug("Could not acquire token or add sentence", err);
+      setSubmitError("Could not add sentence");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Container size="md" className="pt-16 pb-16">
       <Stack gap="lg">
-        <Group justify="space-between" align="flex-end">
+        <Group justify="space-between" align="flex-end" wrap="wrap">
           <div>
             <Title order={2}>Shadowing</Title>
             <Text mt="sm" c="dimmed">
               Practice pronunciation with native speakers
             </Text>
           </div>
-          <Group gap="xs" wrap="nowrap">
-            <TextInput
-              placeholder="Item No"
-              value={goToItemInput}
-              onChange={(e) => setGoToItemInput(e.currentTarget.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleGoToItem();
-                }
-              }}
-              size="sm"
-              w={80}
-            />
-            <Button onClick={handleGoToItem} variant="light" size="sm">
-              Go
+          <Group gap="sm" wrap="nowrap" align="flex-end">
+            <Button
+              variant={viewMode === "view" ? "filled" : "light"}
+              onClick={() => setViewMode("view")}
+            >
+              View all
             </Button>
+            <Button
+              variant={viewMode === "add" ? "filled" : "light"}
+              onClick={() => setViewMode("add")}
+            >
+              Add new
+            </Button>
+            {viewMode === "view" && (
+              <Group gap="xs" wrap="nowrap" align="flex-end">
+                <TextInput
+                  placeholder="Item No"
+                  value={goToItemInput}
+                  onChange={(e) => setGoToItemInput(e.currentTarget.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleGoToItem();
+                    }
+                  }}
+                  size="sm"
+                  w={80}
+                />
+                <Button onClick={handleGoToItem} variant="light" size="sm">
+                  Go
+                </Button>
+              </Group>
+            )}
           </Group>
         </Group>
 
-        {entityLoading ? (
+        {viewMode === "add" ? (
+          <Paper p="lg" radius="md" withBorder>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddSubmit();
+              }}
+            >
+              <Stack gap="md">
+                <Title order={3}>Add a new sentence</Title>
+                <Textarea
+                  label="Sentence"
+                  placeholder="Enter the sentence"
+                  value={newSentence}
+                  onChange={(e) => setNewSentence(e.currentTarget.value)}
+                  minRows={3}
+                  required
+                />
+                <Select
+                  label="Difficulty"
+                  data={[
+                    { value: "easy", label: "Easy" },
+                    { value: "medium", label: "Medium" },
+                    { value: "hard", label: "Hard" },
+                  ]}
+                  value={newDifficulty}
+                  onChange={(value) => value && setNewDifficulty(value as "easy" | "medium" | "hard")}
+                  required
+                />
+                {submitError && (
+                  <Text c="red">{submitError}</Text>
+                )}
+                {submitSuccess && (
+                  <Text c="green">{submitSuccess}</Text>
+                )}
+                <Group justify="flex-start">
+                  <Button type="submit" loading={isSubmitting}>
+                    Add sentence
+                  </Button>
+                </Group>
+              </Stack>
+            </form>
+          </Paper>
+        ) : entityLoading ? (
           <Paper p="lg" radius="md" withBorder>
             <Text>Loading item...</Text>
           </Paper>
@@ -145,14 +244,12 @@ export default function Shadowing() {
           </Paper>
         ) : currentEntity ? (
           <>
-            {/* Sentence Display */}
             <Paper p="xl" radius="md" withBorder bg="blue.0">
               <Text size="xl" fw={600} ta="center" style={{ lineHeight: 1.6 }}>
                 {currentEntity.entity.Sentence}
               </Text>
             </Paper>
 
-            {/* Pronunciations List */}
             <div>
               <Group justify="space-between" align="center" mb="md">
                 <Text size="sm" c="dimmed" fw={500}>
@@ -210,7 +307,6 @@ export default function Shadowing() {
               </Stack>
             </div>
 
-            {/* Navigation */}
             <Group justify="space-between" mt="xl">
               <Button
                 variant="subtle"

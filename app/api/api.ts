@@ -33,6 +33,12 @@ interface ShadowingEntity {
   pronunciations: Pronunciation[];
 }
 
+interface ShadowingCreateResponse {
+  partitionKey: string;
+  rowKey: string;
+  sentence: string;
+}
+
 // API function to search Forvo for a phrase
 export async function searchForvoPhrase(phrase: string, bearerToken?: string): Promise<ForvoSearchResult[]> {
   try {
@@ -329,4 +335,35 @@ export async function fetchShadowingCount(bearerToken?: string): Promise<number 
   }
 }
 
-export type { Phrase, WordData, ForvoSearchResult, Pronunciation, ShadowingEntity };
+// API function to add a new shadowing entry
+export async function addShadowingEntry(
+  sentence: string,
+  difficulty: 'easy' | 'medium' | 'hard',
+  bearerToken?: string
+): Promise<ShadowingCreateResponse | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/shadowing/add`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ sentence, difficulty }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data as ShadowingCreateResponse;
+  } catch (error) {
+    console.error("Failed to add shadowing entry:", error);
+    return null;
+  }
+}
+
+export type { Phrase, WordData, ForvoSearchResult, Pronunciation, ShadowingEntity, ShadowingCreateResponse };

@@ -18,6 +18,9 @@ export default function Shadowing() {
   const [goToItemInput, setGoToItemInput] = useState("");
   const [playCount, setPlayCount] = useState(0);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [replayGoal, setReplayGoal] = useState("");
+  const [sentencesComplete, setSentencesComplete] = useState(0);
+  const [goalReached, setGoalReached] = useState(false);
   const [viewMode, setViewMode] = useState<"view" | "add">("view");
   const [newSentence, setNewSentence] = useState("");
   const [newDifficulty, setNewDifficulty] = useState<"easy" | "medium" | "hard">("easy");
@@ -58,7 +61,17 @@ export default function Shadowing() {
   // Reset play count when navigating to a different item
   useEffect(() => {
     setPlayCount(0);
+    setGoalReached(false);
   }, [currentRowId]);
+
+  // Increment sentences complete when replay goal is hit on current card
+  useEffect(() => {
+    const goalNumber = parseInt(replayGoal, 10);
+    if (!goalReached && goalNumber > 0 && playCount >= goalNumber) {
+      setSentencesComplete(prev => prev + 1);
+      setGoalReached(true);
+    }
+  }, [playCount, replayGoal, goalReached]);
 
   // Load entity when currentRowId changes
   useEffect(() => {
@@ -97,6 +110,13 @@ export default function Shadowing() {
     if (!isAtLastItem) {
       const nextId = parseInt(currentRowId) + 1;
       setCurrentRowId(String(nextId));
+    }
+  };
+
+  const handleRandom = () => {
+    if (totalItems && totalItems > 0) {
+      const randomId = Math.floor(Math.random() * totalItems) + 1;
+      setCurrentRowId(String(randomId));
     }
   };
 
@@ -186,6 +206,9 @@ export default function Shadowing() {
                 <Button onClick={handleGoToItem} variant="light" size="sm">
                   Go
                 </Button>
+                <Button onClick={handleRandom} variant="outline" size="sm">
+                  Random
+                </Button>
               </Group>
             )}
           </Group>
@@ -251,6 +274,22 @@ export default function Shadowing() {
             </Paper>
 
             <div>
+              <Group justify="space-between" align="center" mb="xs">
+                <Group gap="sm" align="center" wrap="nowrap">
+                  <Text size="sm" c="dimmed" fw={500}>Replay goal</Text>
+                  <TextInput
+                    placeholder="e.g. 10"
+                    value={replayGoal}
+                    onChange={(e) => setReplayGoal(e.currentTarget.value)}
+                    size="sm"
+                    w={120}
+                    type="number"
+                    min={1}
+                  />
+                </Group>
+                <Text size="sm" fw={600}>Sentences complete: {sentencesComplete}</Text>
+              </Group>
+
               <Group justify="space-between" align="center" mb="md">
                 <Text size="sm" c="dimmed" fw={500}>
                   Pronunciations ({currentEntity.pronunciations?.length || 0}):

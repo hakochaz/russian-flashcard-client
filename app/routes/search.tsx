@@ -74,6 +74,7 @@ export default function Search() {
       }
 
       setResults(allResults);
+      setCurrentResultIndex(0);
     } catch (error) {
       console.error("Failed to search:", error);
       setResults([]);

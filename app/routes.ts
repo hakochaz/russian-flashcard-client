@@ -7,4 +7,5 @@ export default [
   { file: "routes/create-grammar.tsx", path: "/create-grammar" },
   { file: "routes/forvo-search.tsx", path: "/forvo-search" },
   { file: "routes/shadowing.tsx", path: "/shadowing" },
+  { file: "routes/minimal-pairs.tsx", path: "/minimal-pairs" },
 ] satisfies RouteConfig;

@@ -26,6 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Link to="/create-grammar" className="px-2 py-1 rounded hover:bg-gray-100">Create Grammar</Link>
             <Link to="/forvo-search" className="px-2 py-1 rounded hover:bg-gray-100">Forvo Search</Link>
             <Link to="/shadowing" className="px-2 py-1 rounded hover:bg-gray-100">Shadowing</Link>
+            <Link to="/minimal-pairs" className="px-2 py-1 rounded hover:bg-gray-100">Minimal Pairs</Link>
           </nav>
         </aside>
         <main className="flex-1 p-6">{children}</main>

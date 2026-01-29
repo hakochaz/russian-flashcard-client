@@ -6,6 +6,7 @@ import { Layout } from "../app/root";
 import AllSentences from "../app/routes/all-sentences";
 import Search from "../app/routes/search";
 import Create from "../app/routes/create";
+import MinimalPairs from "../app/routes/minimal-pairs";
 import "../app.css";
 
 const router = createBrowserRouter([
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
       { index: true, element: <AllSentences /> },
       { path: "search", element: <Search /> },
       { path: "create", element: <Create /> },
+      { path: "minimal-pairs", element: <MinimalPairs /> },
     ],
   },
 ]);

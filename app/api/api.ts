@@ -39,6 +39,20 @@ interface ShadowingCreateResponse {
   sentence: string;
 }
 
+interface MinimalPairsEntity {
+  entity: {
+    Pair: string;
+  };
+  pronunciations1: Pronunciation[];
+  pronunciations2: Pronunciation[];
+}
+
+interface MinimalPairsCreateResponse {
+  partitionKey: string;
+  rowKey: string;
+  pair: string;
+}
+
 // API function to search Forvo for a phrase
 export async function searchForvoPhrase(phrase: string, bearerToken?: string): Promise<ForvoSearchResult[]> {
   try {
@@ -366,4 +380,92 @@ export async function addShadowingEntry(
   }
 }
 
-export type { Phrase, WordData, ForvoSearchResult, Pronunciation, ShadowingEntity, ShadowingCreateResponse };
+// API function to fetch minimal pairs entity by ID
+export async function fetchMinimalPairById(rowKey: string, bearerToken?: string): Promise<MinimalPairsEntity | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/minimalpairs/${encodeURIComponent(rowKey)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    return data as MinimalPairsEntity;
+  } catch (error) {
+    console.error("Failed to fetch minimal pairs entity:", error);
+    return null;
+  }
+}
+
+// API function to fetch total minimal pairs count
+export async function fetchMinimalPairsCount(bearerToken?: string): Promise<number | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/table/minimalpairs/count`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    return data.rowCount as number;
+  } catch (error) {
+    console.error("Failed to fetch minimal pairs count:", error);
+    return null;
+  }
+}
+
+// API function to add a new minimal pairs entry
+export async function addMinimalPairEntry(
+  pair: string,
+  difficulty: 'easy' | 'medium' | 'hard',
+  bearerToken?: string
+): Promise<MinimalPairsCreateResponse | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/minimalpairs/add`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ pair, difficulty }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data as MinimalPairsCreateResponse;
+  } catch (error) {
+    console.error("Failed to add minimal pair entry:", error);
+    return null;
+  }
+}
+
+export type {
+  Phrase,
+  WordData,
+  ForvoSearchResult,
+  Pronunciation,
+  ShadowingEntity,
+  ShadowingCreateResponse,
+  MinimalPairsEntity,
+  MinimalPairsCreateResponse,
+};

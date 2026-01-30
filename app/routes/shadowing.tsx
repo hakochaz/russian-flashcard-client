@@ -27,7 +27,9 @@ export default function Shadowing() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shownRandomIds, setShownRandomIds] = useState<Set<number>>(new Set());
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
+  const loadedEntityRef = useRef<string | null>(null);
 
   const { acquireToken } = useAuth();
 
@@ -56,7 +58,7 @@ export default function Shadowing() {
     };
 
     loadItemCount();
-  }, [acquireToken]);
+  }, []);
 
   // Reset play count when navigating to a different item
   useEffect(() => {
@@ -77,6 +79,9 @@ export default function Shadowing() {
   useEffect(() => {
     if (viewMode !== "view") return;
 
+    // Skip if we've already loaded this entity
+    if (loadedEntityRef.current === currentRowId) return;
+
     const loadEntity = async () => {
       setEntityLoading(true);
       setError(null);
@@ -96,8 +101,9 @@ export default function Shadowing() {
       }
     };
 
+    loadedEntityRef.current = currentRowId;
     loadEntity();
-  }, [currentRowId, acquireToken, viewMode]);
+  }, [currentRowId, viewMode, acquireToken]);
 
   const handlePrevious = () => {
     const prevId = parseInt(currentRowId) - 1;
@@ -115,7 +121,34 @@ export default function Shadowing() {
 
   const handleRandom = () => {
     if (totalItems && totalItems > 0) {
-      const randomId = Math.floor(Math.random() * totalItems) + 1;
+      // If all items have been shown, reset the tracking
+      if (shownRandomIds.size >= totalItems) {
+        setShownRandomIds(new Set());
+      }
+
+      // Get available IDs (not yet shown)
+      const availableIds: number[] = [];
+      for (let i = 1; i <= totalItems; i++) {
+        if (!shownRandomIds.has(i)) {
+          availableIds.push(i);
+        }
+      }
+
+      // If no available IDs (shouldn't happen due to reset above), reset and try again
+      if (availableIds.length === 0) {
+        setShownRandomIds(new Set());
+        const randomId = Math.floor(Math.random() * totalItems) + 1;
+        setShownRandomIds(new Set([randomId]));
+        setCurrentRowId(String(randomId));
+        return;
+      }
+
+      // Pick a random ID from available ones
+      const randomIndex = Math.floor(Math.random() * availableIds.length);
+      const randomId = availableIds[randomIndex];
+      
+      // Add to shown set
+      setShownRandomIds(prev => new Set([...prev, randomId]));
       setCurrentRowId(String(randomId));
     }
   };

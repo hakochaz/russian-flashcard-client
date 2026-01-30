@@ -47,8 +47,10 @@ export default function MinimalPairs() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shownRandomIds, setShownRandomIds] = useState<Set<number>>(new Set());
   const leftAudioRefs = useRef<(HTMLAudioElement | null)[]>([]);
   const rightAudioRefs = useRef<(HTMLAudioElement | null)[]>([]);
+  const loadedEntityRef = useRef<string | null>(null);
 
   const { acquireToken } = useAuth();
 
@@ -64,10 +66,13 @@ export default function MinimalPairs() {
     };
 
     loadItemCount();
-  }, [acquireToken]);
+  }, []);
 
   useEffect(() => {
     if (viewMode !== "view") return;
+
+    // Skip if we've already loaded this entity
+    if (loadedEntityRef.current === currentRowId) return;
 
     const loadEntity = async () => {
       setEntityLoading(true);
@@ -88,8 +93,9 @@ export default function MinimalPairs() {
       }
     };
 
+    loadedEntityRef.current = currentRowId;
     loadEntity();
-  }, [currentRowId, acquireToken, viewMode]);
+  }, [currentRowId, viewMode, acquireToken]);
 
   const handlePrevious = () => {
     const prevId = parseInt(currentRowId) - 1;
@@ -107,7 +113,34 @@ export default function MinimalPairs() {
 
   const handleRandom = () => {
     if (totalItems && totalItems > 0) {
-      const randomId = Math.floor(Math.random() * totalItems) + 1;
+      // If all items have been shown, reset the tracking
+      if (shownRandomIds.size >= totalItems) {
+        setShownRandomIds(new Set());
+      }
+
+      // Get available IDs (not yet shown)
+      const availableIds: number[] = [];
+      for (let i = 1; i <= totalItems; i++) {
+        if (!shownRandomIds.has(i)) {
+          availableIds.push(i);
+        }
+      }
+
+      // If no available IDs (shouldn't happen due to reset above), reset and try again
+      if (availableIds.length === 0) {
+        setShownRandomIds(new Set());
+        const randomId = Math.floor(Math.random() * totalItems) + 1;
+        setShownRandomIds(new Set([randomId]));
+        setCurrentRowId(String(randomId));
+        return;
+      }
+
+      // Pick a random ID from available ones
+      const randomIndex = Math.floor(Math.random() * availableIds.length);
+      const randomId = availableIds[randomIndex];
+      
+      // Add to shown set
+      setShownRandomIds(prev => new Set([...prev, randomId]));
       setCurrentRowId(String(randomId));
     }
   };
@@ -127,6 +160,21 @@ export default function MinimalPairs() {
   };
 
   const handlePlayAudio = (refs: MutableRefObject<(HTMLAudioElement | null)[]>, index: number) => {
+    // Stop all audio in both refs
+    leftAudioRefs.current.forEach(audio => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+    rightAudioRefs.current.forEach(audio => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+
+    // Play the selected audio
     const audio = refs.current[index];
     if (audio) {
       audio.currentTime = 0;

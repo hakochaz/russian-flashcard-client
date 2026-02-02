@@ -1,7 +1,7 @@
 import type { Route } from "./+types/forvo-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox } from "@mantine/core";
 import { useState } from "react";
-import { searchForvoPhrase, fetchWordData, fetchWordVariations, type Phrase, type WordData, type ForvoSearchResult } from "../api/api";
+import { searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, type Phrase, type WordData, type ForvoSearchResult } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -49,33 +49,42 @@ export default function ForvoSearch() {
         // Flatten and convert to Phrase objects with unique IDs
         const seenPhrases = new Set<string>();
         let resultIndex = 0;
-        forvoResultsArray.flat().forEach((forvoResult) => {
-          if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
-            seenPhrases.add(forvoResult.phrase);
-            allResults.push({
-              CardId: `forvo-${resultIndex++}`,
-              Phrase: forvoResult.phrase,
-              PhraseStress: "",
-              Audio: forvoResult.audio || "",
-              Translation: "",
-            });
-          }
-        });
+        const resultsWithStress = await Promise.all(
+          forvoResultsArray.flat().map(async (forvoResult) => {
+            if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
+              seenPhrases.add(forvoResult.phrase);
+              const stressedPhrase = await getStressedSentence(forvoResult.phrase, token);
+              return {
+                CardId: `forvo-${resultIndex++}`,
+                Phrase: forvoResult.phrase,
+                PhraseStress: stressedPhrase || forvoResult.phrase,
+                Audio: forvoResult.audio || "",
+                Translation: "",
+              };
+            }
+            return null;
+          })
+        );
+        allResults = resultsWithStress.filter((result) => result !== null) as Phrase[];
       } else {
         // Single phrase search
         const forvoResults = await searchForvoPhrase(searchQuery, token);
         console.log("Forvo results:", forvoResults);
         
-        // Convert array of results to Phrase objects
-        forvoResults.forEach((forvoResult, index) => {
-          allResults.push({
-            CardId: `forvo-${index}`,
-            Phrase: forvoResult.phrase,
-            PhraseStress: "",
-            Audio: forvoResult.audio || "",
-            Translation: "",
-          });
-        });
+        // Convert array of results to Phrase objects with stress marks
+        const resultsWithStress = await Promise.all(
+          forvoResults.map(async (forvoResult, index) => {
+            const stressedPhrase = await getStressedSentence(forvoResult.phrase, token);
+            return {
+              CardId: `forvo-${index}`,
+              Phrase: forvoResult.phrase,
+              PhraseStress: stressedPhrase || forvoResult.phrase,
+              Audio: forvoResult.audio || "",
+              Translation: "",
+            };
+          })
+        );
+        allResults = resultsWithStress;
       }
 
       console.log("All results to set:", allResults);

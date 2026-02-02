@@ -79,6 +79,32 @@ export async function searchForvoPhrase(phrase: string, bearerToken?: string): P
   }
 }
 
+// API function to fetch pronunciations for a word (exact match)
+export async function fetchForvoPronunciations(word: string, bearerToken?: string): Promise<Pronunciation[]> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/forvo/pronunciations/${encodeURIComponent(word)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error("Failed to fetch pronunciations:", error);
+    return [];
+  }
+}
+
 // API function to fetch phrase by ID
 export async function fetchPhraseById(cardId: string, bearerToken?: string): Promise<Phrase | null> {
   try {

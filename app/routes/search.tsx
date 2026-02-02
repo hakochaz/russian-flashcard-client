@@ -7,7 +7,7 @@ import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Search" }];
+  return [{ title: "Sentences Search" }];
 }
 
 export default function Search() {
@@ -157,7 +157,7 @@ export default function Search() {
     <Container size="md" className="pt-16 pb-16">
       <Stack gap="lg">
         <div>
-          <Title order={2}>Search</Title>
+          <Title order={2}>Sentences Search</Title>
           <Text mt="sm" c="dimmed">
             Search for a word to find example sentences
           </Text>

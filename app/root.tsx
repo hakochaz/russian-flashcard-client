@@ -21,11 +21,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
           <nav className="mt-4 flex flex-col gap-2">
             <Link to="/" className="px-2 py-1 rounded hover:bg-gray-100">All Sentences</Link>
-            <Link to="/search" className="px-2 py-1 rounded hover:bg-gray-100">Search</Link>
+            <Link to="/search" className="px-2 py-1 rounded hover:bg-gray-100">Sentences Search</Link>
             <Link to="/create" className="px-2 py-1 rounded hover:bg-gray-100">Create Sentences</Link>
             <Link to="/create-grammar" className="px-2 py-1 rounded hover:bg-gray-100">Create Grammar</Link>
-            <Link to="/forvo-search" className="px-2 py-1 rounded hover:bg-gray-100">Forvo Search</Link>
+            <Link to="/forvo-search" className="px-2 py-1 rounded hover:bg-gray-100">Forvo Sentence Search</Link>
+            <Link to="/forvo-word-search" className="px-2 py-1 rounded hover:bg-gray-100">Forvo Word Search</Link>
             <Link to="/shadowing" className="px-2 py-1 rounded hover:bg-gray-100">Shadowing</Link>
+            <Link to="/letters" className="px-2 py-1 rounded hover:bg-gray-100">Letters</Link>
             <Link to="/minimal-pairs" className="px-2 py-1 rounded hover:bg-gray-100">Minimal Pairs</Link>
           </nav>
         </aside>

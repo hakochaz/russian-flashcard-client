@@ -7,7 +7,7 @@ import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Forvo Search" }];
+  return [{ title: "Forvo Sentence Search" }];
 }
 
 export default function ForvoSearch() {
@@ -165,7 +165,7 @@ export default function ForvoSearch() {
     <Container size="md" className="pt-16 pb-16">
       <Stack gap="lg">
         <div>
-          <Title order={2}>Forvo Search</Title>
+          <Title order={2}>Forvo Sentence Search</Title>
           <Text mt="sm" c="dimmed">
             Search for Russian phrases with native speaker audio from Forvo
           </Text>

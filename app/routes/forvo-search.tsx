@@ -49,42 +49,33 @@ export default function ForvoSearch() {
         // Flatten and convert to Phrase objects with unique IDs
         const seenPhrases = new Set<string>();
         let resultIndex = 0;
-        const resultsWithStress = await Promise.all(
-          forvoResultsArray.flat().map(async (forvoResult) => {
-            if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
-              seenPhrases.add(forvoResult.phrase);
-              const stressedPhrase = await getStressedSentence(forvoResult.phrase, token);
-              return {
-                CardId: `forvo-${resultIndex++}`,
-                Phrase: forvoResult.phrase,
-                PhraseStress: stressedPhrase || forvoResult.phrase,
-                Audio: forvoResult.audio || "",
-                Translation: "",
-              };
-            }
-            return null;
-          })
-        );
-        allResults = resultsWithStress.filter((result) => result !== null) as Phrase[];
+        const resultsWithoutStress = forvoResultsArray.flat().map((forvoResult, idx) => {
+          if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
+            seenPhrases.add(forvoResult.phrase);
+            return {
+              CardId: `forvo-${resultIndex++}`,
+              Phrase: forvoResult.phrase,
+              PhraseStress: forvoResult.phrase,
+              Audio: forvoResult.audio || "",
+              Translation: "",
+            };
+          }
+          return null;
+        });
+        allResults = resultsWithoutStress.filter((result) => result !== null) as Phrase[];
       } else {
         // Single phrase search
         const forvoResults = await searchForvoPhrase(searchQuery, token);
         console.log("Forvo results:", forvoResults);
         
-        // Convert array of results to Phrase objects with stress marks
-        const resultsWithStress = await Promise.all(
-          forvoResults.map(async (forvoResult, index) => {
-            const stressedPhrase = await getStressedSentence(forvoResult.phrase, token);
-            return {
-              CardId: `forvo-${index}`,
-              Phrase: forvoResult.phrase,
-              PhraseStress: stressedPhrase || forvoResult.phrase,
-              Audio: forvoResult.audio || "",
-              Translation: "",
-            };
-          })
-        );
-        allResults = resultsWithStress;
+        // Convert array of results to Phrase objects without stress marks
+        allResults = forvoResults.map((forvoResult, index) => ({
+          CardId: `forvo-${index}`,
+          Phrase: forvoResult.phrase,
+          PhraseStress: forvoResult.phrase,
+          Audio: forvoResult.audio || "",
+          Translation: "",
+        }));
       }
 
       console.log("All results to set:", allResults);
@@ -107,23 +98,27 @@ export default function ForvoSearch() {
       if (results.length > 0 && currentResultIndex < results.length) {
         const currentPhrase = results[currentResultIndex];
         const token = await acquireToken();
-        const dataList = await Promise.all(
-          words.map(word => fetchWordData(word, currentPhrase.Phrase, token))
-        );
+        
+        // Fetch word analysis and stress marks at the same time
+        const [dataList, stressedPhrase] = await Promise.all([
+          Promise.all(words.map(word => fetchWordData(word, currentPhrase.Phrase, token))),
+          getStressedSentence(currentPhrase.Phrase, token)
+        ]);
+        
         setSelectedWordDataList(dataList);
         
-        // Set PhraseStress to the same as Phrase
+        // Set PhraseStress with the stress marks
         setResults(prevResults => {
           const newResults = [...prevResults];
           newResults[currentResultIndex] = {
             ...newResults[currentResultIndex],
-            PhraseStress: newResults[currentResultIndex].Phrase
+            PhraseStress: stressedPhrase || newResults[currentResultIndex].Phrase
           };
           return newResults;
         });
       }
     } catch (error) {
-      console.error("Failed to fetch word data:", error);
+      console.error("Failed to fetch word data or stress marks:", error);
       setSelectedWordDataList([]);
     } finally {
       setCreatingFlashcards(false);

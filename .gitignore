@@ -4,7 +4,6 @@
 
 # React Router
 /.react-router/
-/build/
 
 .env.local
 .env.development.local

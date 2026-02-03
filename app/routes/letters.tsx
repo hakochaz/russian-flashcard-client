@@ -1,7 +1,7 @@
 import type { Route } from "./+types/letters";
 import { Container, Title, Text, Paper, Group, Stack, ActionIcon, Button } from "@mantine/core";
 import { useEffect, useRef, useState } from "react";
-import { fetchForvoPronunciations, type Pronunciation } from "../api/api";
+import { fetchForvoPronunciations, sortPronunciations, type Pronunciation } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 
 const russianLetters = [
@@ -74,7 +74,7 @@ export default function Letters() {
         const token = await acquireToken();
         const result = await fetchForvoPronunciations(currentLetter, token);
         if (isActive) {
-          setPronunciations(result);
+          setPronunciations(sortPronunciations(result));
         }
       } catch (err) {
         console.debug("Could not acquire token or fetch pronunciations", err);

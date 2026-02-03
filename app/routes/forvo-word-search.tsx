@@ -1,7 +1,7 @@
 import type { Route } from "./+types/forvo-word-search";
 import { Container, Title, Text, Paper, Group, Stack, ActionIcon, Button, TextInput } from "@mantine/core";
 import { useState, useRef } from "react";
-import { fetchForvoPronunciations, type Pronunciation } from "../api/api";
+import { fetchForvoPronunciations, sortPronunciations, type Pronunciation } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 
 export function meta({}: Route.MetaArgs) {
@@ -38,7 +38,7 @@ export default function ForvoWordSearch() {
     try {
       const token = await acquireToken();
       const result = await fetchForvoPronunciations(query, token);
-      setPronunciations(result);
+      setPronunciations(sortPronunciations(result));
     } catch (err) {
       console.debug("Could not acquire token or fetch pronunciations", err);
       setError("Could not load pronunciations");

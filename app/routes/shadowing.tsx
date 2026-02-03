@@ -1,7 +1,7 @@
 import type { Route } from "./+types/shadowing";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, ActionIcon, Select, Textarea } from "@mantine/core";
 import { useState, useEffect, useRef } from "react";
-import { addShadowingEntry, fetchShadowingById, fetchShadowingCount, type ShadowingEntity, type Pronunciation } from "../api/api";
+import { addShadowingEntry, fetchShadowingById, fetchShadowingCount, sortPronunciations, type ShadowingEntity, type Pronunciation } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 
 export function meta({}: Route.MetaArgs) {
@@ -89,6 +89,10 @@ export default function Shadowing() {
         const token = await acquireToken();
         const entity = await fetchShadowingById(currentRowId, token);
         if (entity) {
+          // Sort pronunciations by country (Russia first) and gender (Male first)
+          if (entity.pronunciations) {
+            entity.pronunciations = sortPronunciations(entity.pronunciations);
+          }
           setCurrentEntity(entity);
         } else {
           setError("Item not found");

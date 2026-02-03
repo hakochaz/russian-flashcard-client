@@ -53,6 +53,25 @@ interface MinimalPairsCreateResponse {
   pair: string;
 }
 
+// Utility function to sort pronunciations by country (Russia first) and gender (Male first)
+export function sortPronunciations(pronunciations: Pronunciation[]): Pronunciation[] {
+  return [...pronunciations].sort((a, b) => {
+    // First, prioritize Russia country
+    const aIsRussia = a.country === "Russia" ? 1 : 0;
+    const bIsRussia = b.country === "Russia" ? 1 : 0;
+    
+    if (aIsRussia !== bIsRussia) {
+      return bIsRussia - aIsRussia; // Russia first (higher value first)
+    }
+    
+    // Then, within same country, prioritize Male gender
+    const aIsMale = a.sex === "m" ? 1 : 0;
+    const bIsMale = b.sex === "m" ? 1 : 0;
+    
+    return bIsMale - aIsMale; // Male first (higher value first)
+  });
+}
+
 // API function to search Forvo for a phrase
 export async function searchForvoPhrase(phrase: string, bearerToken?: string): Promise<ForvoSearchResult[]> {
   try {

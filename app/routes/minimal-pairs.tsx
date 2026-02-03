@@ -17,6 +17,7 @@ import {
   addMinimalPairEntry,
   fetchMinimalPairById,
   fetchMinimalPairsCount,
+  sortPronunciations,
   type MinimalPairsEntity,
   type Pronunciation,
 } from "../api/api";
@@ -81,6 +82,13 @@ export default function MinimalPairs() {
         const token = await acquireToken();
         const entity = await fetchMinimalPairById(currentRowId, token);
         if (entity) {
+          // Sort pronunciations by country (Russia first) and gender (Male first)
+          if (entity.pronunciations1) {
+            entity.pronunciations1 = sortPronunciations(entity.pronunciations1);
+          }
+          if (entity.pronunciations2) {
+            entity.pronunciations2 = sortPronunciations(entity.pronunciations2);
+          }
           setCurrentEntity(entity);
         } else {
           setError("Item not found");
@@ -290,6 +298,10 @@ export default function MinimalPairs() {
     const leftOnlyIndices = left.map((_, i) => i).filter(i => !commonUsernames.includes(left[i].username));
     const rightOnlyIndices = right.map((_, i) => i).filter(i => !commonUsernames.includes(right[i].username));
 
+    // Sort the left and right only indices based on the original sort order in their arrays
+    const leftOnlySorted = leftOnlyIndices.map(idx => left[idx]);
+    const rightOnlySorted = rightOnlyIndices.map(idx => right[idx]);
+
     return (
       <Stack gap="lg">
         {/* Matched pairs */}
@@ -396,10 +408,10 @@ export default function MinimalPairs() {
             </Text>
             <SimpleGrid cols={2} spacing="lg">
               <div>
-                {leftOnlyIndices.length > 0 && (
+                {leftOnlySorted.length > 0 && (
                   <Stack gap="sm">
-                    {leftOnlyIndices.map((idx) => {
-                      const pron = left[idx];
+                    {leftOnlySorted.map((pron, sortedIdx) => {
+                      const idx = leftOnlyIndices[sortedIdx];
                       return (
                         <Paper key={idx} p="md" radius="md" withBorder bg="gray.0">
                           <Group gap="xl" align="center" wrap="nowrap">
@@ -444,10 +456,10 @@ export default function MinimalPairs() {
                 )}
               </div>
               <div>
-                {rightOnlyIndices.length > 0 && (
+                {rightOnlySorted.length > 0 && (
                   <Stack gap="sm">
-                    {rightOnlyIndices.map((idx) => {
-                      const pron = right[idx];
+                    {rightOnlySorted.map((pron, sortedIdx) => {
+                      const idx = rightOnlyIndices[sortedIdx];
                       return (
                         <Paper key={idx} p="md" radius="md" withBorder bg="gray.0">
                           <Group gap="xl" align="center" wrap="nowrap">

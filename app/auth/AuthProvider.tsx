@@ -55,6 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return accounts.length ? accounts[0] : null;
   });
   const [redirecting, setRedirecting] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const hasRedirected = useRef(false);
 
   // handle redirect response and auto-start login if no account
@@ -81,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (res && res.account) {
           setAccount(res.account);
           setRedirecting(false);
+          setIsInitializing(false);
           interactionLockRef.current = false;
           redirectProcessingRef.current = false;
           return;
@@ -90,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (accounts.length) {
           setAccount(accounts[0]);
           setRedirecting(false);
+          setIsInitializing(false);
           interactionLockRef.current = false;
           redirectProcessingRef.current = false;
           return;
@@ -106,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("MSAL redirect handling error:", err);
         // clear redirecting state on error so UI doesn't get stuck
         setRedirecting(false);
+        setIsInitializing(false);
         interactionLockRef.current = false;
       } finally {
         // ensure redirectProcessingRef is cleared even on error
@@ -236,8 +240,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     acquireToken,
   }), [account, login, logout, acquireToken]);
 
-  if (redirecting) {
-    return <div style={{padding: 32, textAlign: 'center'}}>Redirecting to Microsoft login…</div>;
+  if (isInitializing || redirecting) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        backgroundColor: '#fff'
+      }}>
+        <div style={{
+          width: '48px',
+          height: '48px',
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #228be6',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
   }
 
   return (

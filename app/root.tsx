@@ -3,11 +3,11 @@ import { isRouteErrorResponse, Outlet, Link, ScrollRestoration, Meta, Links, Scr
 // Import styles of packages that you've installed.
 // All packages except `@mantine/hooks` require styles imports
 import '@mantine/core/styles.css';
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text, createTheme } from '@mantine/core';
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text, createTheme, Button } from '@mantine/core';
 
 import type { Route } from "./+types/root";
 import "./app.css";
-import AuthProvider from "./auth/AuthProvider";
+import AuthProvider, { useAuth } from "./auth/AuthProvider";
 
 const theme = createTheme({
   primaryColor: 'blue',
@@ -16,6 +16,7 @@ const theme = createTheme({
 
 function Navigation() {
   const location = useLocation();
+  const { logout, account } = useAuth();
   
   const navItems = [
     { to: "/", label: "All Sentences", icon: "📚" },
@@ -29,26 +30,57 @@ function Navigation() {
     { to: "/minimal-pairs", label: "Minimal Pairs", icon: "👂" },
   ];
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
   return (
-    <nav className="mt-6 flex flex-col gap-1">
-      {navItems.map(({ to, label, icon }) => {
-        const isActive = location.pathname === to;
-        return (
-          <Link
-            key={to}
-            to={to}
-            className={`px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-200 group ${
-              isActive
-                ? 'bg-blue-50 text-blue-700 font-medium shadow-sm'
-                : 'text-gray-700 hover:bg-gray-50 hover:translate-x-0.5'
-            }`}
-          >
-            <span className="text-lg">{icon}</span>
-            <span className="text-sm">{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+    <div className="flex flex-col h-full">
+      <nav className="mt-6 flex flex-col gap-1 flex-1">
+        {navItems.map(({ to, label, icon }) => {
+          const isActive = location.pathname === to;
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={`px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-200 group ${
+                isActive
+                  ? 'bg-blue-50 text-blue-700 font-medium shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-50 hover:translate-x-0.5'
+              }`}
+            >
+              <span className="text-lg">{icon}</span>
+              <span className="text-sm">{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+      
+      {/* Logout section at bottom */}
+      <div className="mt-auto pt-4 border-t border-gray-200">
+        {account && (
+          <div className="px-3 py-2 mb-3">
+            <Text size="xs" c="dimmed" className="truncate">
+              {account.username}
+            </Text>
+          </div>
+        )}
+        <Button
+          variant="light"
+          color="red"
+          fullWidth
+          onClick={handleLogout}
+          className="hover:shadow-sm transition-all"
+          leftSection={<span>🚪</span>}
+        >
+          Log Out
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -59,7 +91,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <MantineProvider theme={theme}>
       <div className="flex min-h-screen bg-gray-50">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm">
+        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm flex flex-col h-screen sticky top-0">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xl shadow-md">
@@ -71,7 +103,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 flex-1 flex flex-col overflow-y-auto">
             <Navigation />
           </div>
         </aside>

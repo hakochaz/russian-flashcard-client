@@ -144,49 +144,74 @@ export default function AllSentences() {
   };
 
   return (
-    <Container size="md" className="pt-16 pb-16">
-      <Stack gap="lg">
-        <Group justify="space-between" align="flex-end">
-          <div>
-            <Title order={2}>All Sentences</Title>
-            <Text mt="sm" c="dimmed">
-              Select a word from the sentence to create a flashcard
+    <div>
+      <div className="mb-8">
+        <Title order={1} className="text-3xl font-bold text-gray-900 mb-2">
+          All Sentences
+        </Title>
+        <Text c="dimmed" size="lg">
+          Select words from sentences to create flashcards
+        </Text>
+      </div>
+
+      <Stack gap="xl">
+        <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">
+          <Group justify="space-between" align="center">
+            <Text size="sm" c="dimmed" className="flex items-center gap-2">
+              <span>📊</span>
+              {totalCards !== null ? (
+                <>Viewing card <strong>{currentCardId}</strong> of <strong>{totalCards}</strong></>
+              ) : (
+                <>Card <strong>{currentCardId}</strong></>
+              )}
             </Text>
-          </div>
-          <Group gap="xs" wrap="nowrap">
-            <TextInput
-              placeholder="Card No"
-              value={goToCardInput}
-              onChange={(e) => setGoToCardInput(e.currentTarget.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  handleGoToCard();
-                }
-              }}
-              size="sm"
-              w={80}
-            />
-            <Button onClick={handleGoToCard} variant="light" size="sm">
-              Go
-            </Button>
+            <Group gap="xs" wrap="nowrap">
+              <TextInput
+                placeholder="Go to card..."
+                value={goToCardInput}
+                onChange={(e) => setGoToCardInput(e.currentTarget.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleGoToCard();
+                  }
+                }}
+                size="sm"
+                w={120}
+                className="transition-all focus-within:shadow-sm"
+              />
+              <Button 
+                onClick={handleGoToCard} 
+                variant="light" 
+                size="sm"
+                className="hover:shadow-sm transition-all"
+              >
+                Go
+              </Button>
+            </Group>
           </Group>
-        </Group>
+        </Paper>
 
         {phraseLoading ? (
-          <Paper p="lg" radius="md" withBorder>
-            <Text>Loading card...</Text>
+          <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
+            <div className="flex items-center justify-center py-12">
+              <Text c="dimmed">Loading card...</Text>
+            </div>
           </Paper>
         ) : error ? (
-          <Paper p="lg" radius="md" withBorder>
-            <Text c="red">{error}</Text>
+          <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-red-100">
+            <div className="flex items-center justify-center py-12">
+              <Text c="red" fw={500}>{error}</Text>
+            </div>
           </Paper>
         ) : currentPhrase ? (
           <>
             {selectedWords.length > 0 ? (
               <>
                 {creatingFlashcards ? (
-                  <Paper p="lg" radius="md" withBorder>
-                    <Text>Creating flashcards...</Text>
+                  <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
+                    <div className="flex items-center justify-center py-12">
+                      <Text c="dimmed">Creating flashcards...</Text>
+                    </div>
                   </Paper>
                 ) : selectedWordDataList.length > 0 ? (
                   <>
@@ -198,25 +223,33 @@ export default function AllSentences() {
                       onBack={handleBackToSentence}
                     />
 
-                    <Group justify="space-between" mt="xl">
-                      <Button
-                        variant="subtle"
-                        onClick={handlePreviousWord}
-                        disabled={isAtFirstWord}
-                      >
-                        Previous
-                      </Button>
-                      <Text c="dimmed">
-                        {currentSelectedWordIndex + 1} / {selectedWords.length}
-                      </Text>
-                      <Button
-                        variant="subtle"
-                        onClick={handleNextWord}
-                        disabled={isAtLastWord}
-                      >
-                        Next
-                      </Button>
-                    </Group>
+                    <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">
+                      <Group justify="space-between">
+                        <Button
+                          variant="light"
+                          onClick={handlePreviousWord}
+                          disabled={isAtFirstWord}
+                          leftSection={<span>←</span>}
+                          className="hover:shadow-sm transition-all"
+                        >
+                          Previous Word
+                        </Button>
+                        <div className="px-4 py-2 bg-blue-50 rounded-full">
+                          <Text size="sm" fw={600} c="blue.7">
+                            {currentSelectedWordIndex + 1} / {selectedWords.length}
+                          </Text>
+                        </div>
+                        <Button
+                          variant="light"
+                          onClick={handleNextWord}
+                          disabled={isAtLastWord}
+                          rightSection={<span>→</span>}
+                          className="hover:shadow-sm transition-all"
+                        >
+                          Next Word
+                        </Button>
+                      </Group>
+                    </Paper>
                   </>
                 ) : null}
               </>
@@ -229,29 +262,37 @@ export default function AllSentences() {
             )}
 
             {selectedWords.length === 0 && (
-              <Group justify="space-between" mt="xl">
-                <Button
-                  variant="subtle"
-                  onClick={handlePrevious}
-                  disabled={isAtFirstCard}
-                >
-                  Previous
-                </Button>
-                <Text c="dimmed">
-                  {currentCardId} {totalCards !== null ? `/ ${totalCards}` : ""}
-                </Text>
-                <Button
-                  variant="subtle"
-                  onClick={handleNext}
-                  disabled={isAtLastCard}
-                >
-                  {isAtLastCard ? "Last Card" : "Next"}
-                </Button>
-              </Group>
+              <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">
+                <Group justify="space-between">
+                  <Button
+                    variant="light"
+                    onClick={handlePrevious}
+                    disabled={isAtFirstCard}
+                    leftSection={<span>←</span>}
+                    className="hover:shadow-sm transition-all"
+                  >
+                    Previous
+                  </Button>
+                  <div className="px-4 py-2 bg-gray-100 rounded-full">
+                    <Text size="sm" fw={600} c="gray.7">
+                      Card {currentCardId} {totalCards !== null ? `/ ${totalCards}` : ""}
+                    </Text>
+                  </div>
+                  <Button
+                    variant="light"
+                    onClick={handleNext}
+                    disabled={isAtLastCard}
+                    rightSection={<span>→</span>}
+                    className="hover:shadow-sm transition-all"
+                  >
+                    {isAtLastCard ? "Last Card" : "Next"}
+                  </Button>
+                </Group>
+              </Paper>
             )}
           </>
         ) : null}
       </Stack>
-    </Container>
+    </div>
   );
 }

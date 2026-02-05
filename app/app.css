@@ -8,8 +8,29 @@
 html,
 body {
   /* Force light background and readable text until theme is configured */
-  background: #ffffff;
+  background: #f9fafb;
   color: #111827;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions for interactive elements */
+a, button {
+  transition: all 0.2s ease;
+}
+
+/* Enhanced Paper/Card styling for Mantine components */
+.mantine-Paper-root {
+  transition: all 0.2s ease;
+}
+
+.mantine-Paper-root:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Better focus states */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
 }

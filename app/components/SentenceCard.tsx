@@ -22,21 +22,33 @@ export function SentenceCard({ phrase, onSelectWords, selectedWords }: SentenceC
   const [localSelectedWords, setLocalSelectedWords] = useState<string[]>([]);
 
   return (
-    <Paper p="lg" radius="md" withBorder>
-      <Stack gap="md">
+    <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
+      <Stack gap="lg">
         <div>
-          <Text size="sm" c="dimmed" mb="md">
-            Click on words to select them, then confirm:
+          <Text size="sm" c="dimmed" mb="md" className="flex items-center gap-2">
+            <span>💡</span> Click on words to select them for flashcard creation
           </Text>
-          <Paper p="md" bg="gray.0" radius="sm" style={{ lineHeight: 1.8, minHeight: "80px", display: "flex", alignItems: "center" }}>
-            <Group gap="xs" wrap="wrap">
+          <Paper 
+            p="lg" 
+            className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200" 
+            radius="md" 
+            style={{ lineHeight: 2, minHeight: "100px", display: "flex", alignItems: "center" }}
+          >
+            <Group gap="sm" wrap="wrap">
               {words.map((word, index) => (
                 <Button
                   key={index}
                   variant={localSelectedWords.includes(word) ? "filled" : "light"}
-                  size="sm"
+                  size="md"
                   onClick={() => toggleWord(word)}
-                  style={{ cursor: "pointer" }}
+                  className={localSelectedWords.includes(word) 
+                    ? "shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all" 
+                    : "hover:shadow-sm transform hover:-translate-y-0.5 transition-all"}
+                  styles={{
+                    root: {
+                      fontWeight: 500,
+                    }
+                  }}
                 >
                   {word}
                 </Button>
@@ -46,11 +58,19 @@ export function SentenceCard({ phrase, onSelectWords, selectedWords }: SentenceC
         </div>
 
         {localSelectedWords.length > 0 && (
-          <Group justify="flex-end">
-            <Button variant="light" onClick={() => setLocalSelectedWords([])}>
+          <Group justify="flex-end" className="pt-2 border-t border-gray-100">
+            <Button 
+              variant="light" 
+              onClick={() => setLocalSelectedWords([])}
+              className="hover:shadow-sm transition-all"
+            >
               Clear Selection
             </Button>
-            <Button onClick={() => onSelectWords(localSelectedWords)}>
+            <Button 
+              onClick={() => onSelectWords(localSelectedWords)}
+              className="shadow-md hover:shadow-lg transition-all"
+              leftSection={<span>✨</span>}
+            >
               Create Flashcards ({localSelectedWords.length})
             </Button>
           </Group>

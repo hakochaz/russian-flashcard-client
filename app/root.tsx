@@ -1,40 +1,102 @@
-import { isRouteErrorResponse, Outlet, Link, ScrollRestoration, Meta, Links, Scripts } from "react-router-dom";
+import { isRouteErrorResponse, Outlet, Link, ScrollRestoration, Meta, Links, Scripts, useLocation } from "react-router-dom";
 
 // Import styles of packages that you've installed.
 // All packages except `@mantine/hooks` require styles imports
 import '@mantine/core/styles.css';
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text } from '@mantine/core';
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text, createTheme } from '@mantine/core';
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import AuthProvider from "./auth/AuthProvider";
 
+const theme = createTheme({
+  primaryColor: 'blue',
+  defaultRadius: 'md',
+});
+
+function Navigation() {
+  const location = useLocation();
+  
+  const navItems = [
+    { to: "/", label: "All Sentences", icon: "📚" },
+    { to: "/search", label: "Sentences Search", icon: "🔍" },
+    { to: "/create", label: "Create Sentences", icon: "✏️" },
+    { to: "/create-grammar", label: "Create Grammar", icon: "📝" },
+    { to: "/forvo-search", label: "Forvo Sentence Search", icon: "🎙️" },
+    { to: "/forvo-word-search", label: "Forvo Word Search", icon: "🔊" },
+    { to: "/shadowing", label: "Shadowing", icon: "🗣️" },
+    { to: "/letters", label: "Letters", icon: "🔤" },
+    { to: "/minimal-pairs", label: "Minimal Pairs", icon: "👂" },
+  ];
+
+  return (
+    <nav className="mt-6 flex flex-col gap-1">
+      {navItems.map(({ to, label, icon }) => {
+        const isActive = location.pathname === to;
+        return (
+          <Link
+            key={to}
+            to={to}
+            className={`px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-200 group ${
+              isActive
+                ? 'bg-blue-50 text-blue-700 font-medium shadow-sm'
+                : 'text-gray-700 hover:bg-gray-50 hover:translate-x-0.5'
+            }`}
+          >
+            <span className="text-lg">{icon}</span>
+            <span className="text-sm">{label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const isClient = typeof document !== "undefined";
 
   const layout = (
-    <MantineProvider>
-      <div className="flex min-h-screen">
-        <aside className="w-56 border-r p-4">
-          <div style={{ height: 60 }} className="flex items-center">
-            <Text style={{ fontWeight: 700 }}>Russian Flashcards</Text>
+    <MantineProvider theme={theme}>
+      <div className="flex min-h-screen bg-gray-50">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xl shadow-md">
+                🇷🇺
+              </div>
+              <div>
+                <Text className="font-bold text-gray-900 text-lg leading-tight">Russian</Text>
+                <Text className="text-xs text-gray-500">Flashcards</Text>
+              </div>
+            </div>
           </div>
-          <nav className="mt-4 flex flex-col gap-2">
-            <Link to="/" className="px-2 py-1 rounded hover:bg-gray-100">All Sentences</Link>
-            <Link to="/search" className="px-2 py-1 rounded hover:bg-gray-100">Sentences Search</Link>
-            <Link to="/create" className="px-2 py-1 rounded hover:bg-gray-100">Create Sentences</Link>
-            <Link to="/create-grammar" className="px-2 py-1 rounded hover:bg-gray-100">Create Grammar</Link>
-            <Link to="/forvo-search" className="px-2 py-1 rounded hover:bg-gray-100">Forvo Sentence Search</Link>
-            <Link to="/forvo-word-search" className="px-2 py-1 rounded hover:bg-gray-100">Forvo Word Search</Link>
-            <Link to="/shadowing" className="px-2 py-1 rounded hover:bg-gray-100">Shadowing</Link>
-            <Link to="/letters" className="px-2 py-1 rounded hover:bg-gray-100">Letters</Link>
-            <Link to="/minimal-pairs" className="px-2 py-1 rounded hover:bg-gray-100">Minimal Pairs</Link>
-          </nav>
+          <div className="px-4 pb-4">
+            <Navigation />
+          </div>
         </aside>
-        <main className="flex-1 p-6">{children}</main>
+        
+        {/* Main content */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+            <div className="px-8 py-4">
+              <Text className="text-sm text-gray-600">Welcome back! 👋</Text>
+            </div>
+          </header>
+          
+          {/* Content */}
+          <main className="flex-1 p-8">
+            <div className="max-w-7xl mx-auto">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </MantineProvider>
   );
+
+  // The rest of the function remains unchanged
 
   if (!isClient) {
     return (

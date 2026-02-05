@@ -1,0 +1,1 @@
+import{g as t,s as n}from"./AuthProvider-DIbg4P3B.js";function s({color:o,theme:r,autoContrast:a}){return(typeof a=="boolean"?a:r.autoContrast)&&n({color:o||r.primaryColor,theme:r}).isLight?"var(--mantine-color-black)":"var(--mantine-color-white)"}function e(o,r){return s({color:o.colors[o.primaryColor][t(o,r)],theme:o,autoContrast:null})}export{s as a,e as g};

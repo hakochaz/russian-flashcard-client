@@ -43,8 +43,8 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, i
               </Text>
               <Paper p="md" className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100" radius="md">
                 <Group justify="space-between" align="center">
-                  <Text fw={600} size="lg" c="blue.9">{wordData.baseForm}</Text>
-                  <CopyButton value={wordData.baseForm}>
+                  <Text fw={600} size="lg" c="blue.9">{wordData.baseFormStress || wordData.baseForm}</Text>
+                  <CopyButton value={wordData.baseFormStress || wordData.baseForm}>
                     {({ copied, copy }) => (
                       <Tooltip label={copied ? "Copied" : "Copy"} withArrow position="left">
                         <ActionIcon

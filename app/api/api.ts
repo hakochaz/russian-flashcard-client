@@ -10,6 +10,7 @@ interface Phrase {
 
 interface WordData {
   baseForm: string;
+  baseFormStress: string;
   englishTranslation: string;
   russianMeaning: string;
 }
@@ -173,7 +174,7 @@ export async function fetchCardCount(bearerToken?: string): Promise<number | nul
 }
 
 // API function to fetch word analysis data
-export async function fetchWordData(word: string, sentence: string, bearerToken?: string): Promise<WordData> {
+export async function fetchWordData(word: string, sentence: string, bearerToken?: string, fetchStress: boolean = true): Promise<WordData> {
   // Remove punctuation from the end of the word (commas, periods, etc.)
   const cleanWord = word.replace(/[,\.!?;:—–-]+$/, '');
   
@@ -196,17 +197,29 @@ export async function fetchWordData(word: string, sentence: string, bearerToken?
       console.error(`API error: ${response.status}`);
       return {
         baseForm: word,
+        baseFormStress: word,
         englishTranslation: "Translation not found",
         russianMeaning: "Meaning not found",
       };
     }
     
-    const data = await response.json();
-    return data as WordData;
+    const data = await response.json() as WordData;
+    
+    // Get stressed version of the base form if requested
+    let stressedBaseForm = data.baseForm;
+    if (fetchStress) {
+      stressedBaseForm = await getStressedWord(data.baseForm, bearerToken) || data.baseForm;
+    }
+    
+    return {
+      ...data,
+      baseFormStress: stressedBaseForm,
+    };
   } catch (error) {
     console.error("Failed to fetch word data:", error);
     return {
       baseForm: word,
+      baseFormStress: word,
       englishTranslation: "Translation not found",
       russianMeaning: "Meaning not found",
     };
@@ -315,6 +328,33 @@ export async function getStressedSentence(sentence: string, bearerToken?: string
     return data.stressed || null;
   } catch (error) {
     console.error("Failed to get stressed sentence:", error);
+    return null;
+  }
+}
+
+// API function to get word with stress marks
+export async function getStressedWord(word: string, bearerToken?: string): Promise<string | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/stress`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ sentence: word }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.stressed || null;
+  } catch (error) {
+    console.error("Failed to get stressed word:", error);
     return null;
   }
 }

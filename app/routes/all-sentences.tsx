@@ -75,13 +75,13 @@ export default function AllSentences() {
         try {
           const token = await acquireToken();
           const dataList = await Promise.all(
-            words.map(word => fetchWordData(word, currentPhrase.Phrase, token))
+            words.map(word => fetchWordData(word, currentPhrase.Phrase, token, false))
           );
           setSelectedWordDataList(dataList);
         } catch (err) {
           console.debug("Could not acquire token for word data", err);
           const dataList = await Promise.all(
-            words.map(word => fetchWordData(word, currentPhrase.Phrase))
+            words.map(word => fetchWordData(word, currentPhrase.Phrase, undefined, false))
           );
           setSelectedWordDataList(dataList);
         }

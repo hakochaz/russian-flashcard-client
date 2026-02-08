@@ -65,6 +65,28 @@ export default function AllSentences() {
     loadPhrase();
   }, [currentCardId]);
 
+  // Handle keyboard navigation with arrow keys
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        if (selectedWords.length > 0) {
+          handlePreviousWord();
+        } else {
+          handlePrevious();
+        }
+      } else if (e.key === "ArrowRight") {
+        if (selectedWords.length > 0) {
+          handleNextWord();
+        } else {
+          handleNext();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [selectedWords.length, currentSelectedWordIndex, currentCardId, totalCards]);
+
   const handleSelectWords = async (words: string[]) => {
     setSelectedWords(words);
     setCurrentSelectedWordIndex(0);

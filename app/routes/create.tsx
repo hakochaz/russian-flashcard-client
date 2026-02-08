@@ -1,6 +1,6 @@
 import type { Route } from "./+types/create";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput } from "@mantine/core";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { fetchWordData, synthesizeSentenceAudio, getStressedSentence, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
@@ -19,6 +19,22 @@ export default function Create() {
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
 
   const { acquireToken } = useAuth();
+
+  // Handle keyboard navigation with arrow keys
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (selectedWords.length > 0) {
+        if (e.key === "ArrowLeft") {
+          handlePreviousWord();
+        } else if (e.key === "ArrowRight") {
+          handleNextWord();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [selectedWords.length, currentSelectedWordIndex]);
 
   const handleUseInput = () => {
     const phrase: Phrase = {

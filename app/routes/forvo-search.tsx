@@ -1,6 +1,6 @@
 import type { Route } from "./+types/forvo-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox } from "@mantine/core";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, type Phrase, type WordData, type ForvoSearchResult } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
@@ -22,6 +22,28 @@ export default function ForvoSearch() {
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
   const [searchAllForms, setSearchAllForms] = useState(false);
   const { acquireToken } = useAuth();
+
+  // Handle keyboard navigation with arrow keys
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        if (selectedWords.length > 0) {
+          handlePreviousWord();
+        } else if (results.length > 0) {
+          handlePrevious();
+        }
+      } else if (e.key === "ArrowRight") {
+        if (selectedWords.length > 0) {
+          handleNextWord();
+        } else if (results.length > 0) {
+          handleNext();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [selectedWords.length, currentSelectedWordIndex, currentResultIndex, results.length]);
 
   const handleSearch = async () => {
     setIsSearching(true);

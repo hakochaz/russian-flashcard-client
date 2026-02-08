@@ -105,6 +105,20 @@ export default function MinimalPairs() {
     loadEntity();
   }, [currentRowId, viewMode, acquireToken]);
 
+  // Handle keyboard navigation with arrow keys
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        handlePrevious();
+      } else if (e.key === "ArrowRight") {
+        handleNext();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [currentRowId, totalItems]);
+
   const handlePrevious = () => {
     const prevId = parseInt(currentRowId) - 1;
     if (prevId >= 1) {

@@ -1,7 +1,7 @@
 import type { Route } from "./+types/create-grammar";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, CopyButton, ActionIcon, Tooltip } from "@mantine/core";
 import { useState } from "react";
-import { fetchPhraseBaseForm, synthesizeSentenceAudio } from "../api/api";
+import { fetchPhraseBaseForm, synthesizeSentenceAudio, getStressedWord } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 
 export function meta({}: Route.MetaArgs) {
@@ -10,6 +10,7 @@ export function meta({}: Route.MetaArgs) {
 
 interface PhraseResult {
   phraseAnswer: string;
+  phraseAnswerStress: string;
   bracketedSentence: string;
   audioUrl: string;
 }
@@ -93,8 +94,10 @@ export default function CreateGrammar() {
       ]);
 
       if (phraseData && audioUrl) {
+        const phraseAnswerStress = await getStressedWord(phraseData.phraseAnswer, token);
         setResult({
           phraseAnswer: phraseData.phraseAnswer,
+          phraseAnswerStress: phraseAnswerStress || phraseData.phraseAnswer,
           bracketedSentence: phraseData.bracketedSentence,
           audioUrl: audioUrl
         });
@@ -108,8 +111,10 @@ export default function CreateGrammar() {
         ]);
 
         if (phraseData && audioUrl) {
+          const phraseAnswerStress = await getStressedWord(phraseData.phraseAnswer);
           setResult({
             phraseAnswer: phraseData.phraseAnswer,
+            phraseAnswerStress: phraseAnswerStress || phraseData.phraseAnswer,
             bracketedSentence: phraseData.bracketedSentence,
             audioUrl: audioUrl
           });
@@ -240,8 +245,8 @@ export default function CreateGrammar() {
                 </Text>
                 <Paper p="md" bg="gray.0" radius="sm">
                   <Group justify="space-between" align="center">
-                    <Text fw={500}>{result.phraseAnswer}</Text>
-                    <CopyButton value={result.phraseAnswer}>
+                    <Text fw={500}>{result.phraseAnswerStress}</Text>
+                    <CopyButton value={result.phraseAnswerStress}>
                       {({ copied, copy }) => (
                         <Tooltip label={copied ? "Copied" : "Copy"} withArrow position="left">
                           <ActionIcon

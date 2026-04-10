@@ -1,87 +1,54 @@
-# Welcome to React Router!
+# Russian Flashcard Generator
 
-A modern, production-ready template for building full-stack React applications using React Router.
+A full-stack application for generating intelligent Russian language flashcards to accelerate vocabulary and grammar learning. Built with a modern React + Azure-based architecture.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
-
-## Features
-
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
-
-## Getting Started
-
-### Installation
-
-Install the dependencies:
-
-```bash
-npm install
-```
-
-### Development
-
-Start the development server with HMR:
-
-```bash
-npm run dev
-```
-
-Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+> ⚡ Designed to be used in conjunction with Anki for spaced repetition learning.
 
 ---
 
-Built with ❤️ using React Router.
+## 🚀 Overview
+
+The **Russian Flashcard Generator** helps learners create high-quality flashcards automatically, reducing manual effort and improving retention through structured repetition.
+
+It supports generating:
+- Vocabulary flashcards
+- Grammar-based examples
+- Sentence-based context learning
+- Native audio provided by Forvo
+- Azure AI generated audio
+
+---
+
+## ✨ Features
+
+- 🧠 AI-assisted flashcard generation
+- 📚 Support for vocabulary, phrases, and grammar
+- 🔊 Forvo integration for native speaker pronunciation
+- 📖 Wiktionary integration for definitions and linguistic detail
+- 🗣️ Azure Speech Service for AI-powered text-to-speech
+- ⚡ Fast and responsive UI with React
+- 🔒 Secure API integration
+
+---
+
+## 🏗️ Tech Stack
+
+### Frontend
+- React
+- React Router
+- TypeScript
+- Mantine UI
+
+### Backend
+- Azure Functions (serverless API)
+- RESTful APIs
+- Azure AI Search
+- Azure Speech Service
+- Open AI integration
+
+### Authentication (optional)
+- Microsoft Entra ID
+
+### Application Architecture
+
+<img width="781" height="781" alt="Flashcard App drawio(2)" src="https://github.com/user-attachments/assets/2bd65715-ac4b-4ea5-8648-dcd867117f5e" />

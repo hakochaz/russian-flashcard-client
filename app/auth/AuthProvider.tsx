@@ -51,8 +51,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const interactionLockRef = useRef(false);
   const redirectProcessingRef = useRef(false);
   const [account, setAccount] = useState<AccountInfo | null>(() => {
-    const accounts = msalInstance.getAllAccounts();
-    return accounts.length ? accounts[0] : null;
+    try {
+      const accounts = msalInstance.getAllAccounts();
+      return accounts.length ? accounts[0] : null;
+    } catch (err) {
+      console.error("MSAL getAllAccounts error", err);
+      // If MSAL state is corrupt, clear storage and reload
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+      window.location.reload();
+      return null;
+    }
   });
   const [redirecting, setRedirecting] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -106,7 +115,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await msalInstance.loginRedirect(apiRequest);
         }
       } catch (err) {
-        console.error("MSAL redirect handling error:", err);
+        // Enhanced error handling for MSAL state corruption
+        let errorCode = undefined;
+        if (err && typeof err === 'object') {
+          // MSAL errors may have errorCode or error property
+          errorCode = (err as any).errorCode || ((err as any).error && (err as any).error.errorCode);
+        }
+        // Fallback: try to match error message string
+        const errorString = (err && typeof err === 'string') ? err : (err && err.toString && typeof err.toString === 'function' ? err.toString() : '');
+        if (
+          errorCode === "user_login_error" ||
+          errorCode === "invalid_state" ||
+          errorCode === "token_renewal_error" ||
+          errorCode === "cache_parse_error" ||
+          (typeof errorString === 'string' && errorString.includes("user_login_error")) ||
+          (typeof errorString === 'string' && errorString.includes("invalid_state")) ||
+          (typeof errorString === 'string' && errorString.includes("token_renewal_error")) ||
+          (typeof errorString === 'string' && errorString.includes("cache_parse_error"))
+        ) {
+          console.error("MSAL state error detected, forcing logout/clear:", err);
+          msalInstance.logoutRedirect();
+        } else {
+          console.error("MSAL redirect handling error:", err);
+        }
         // clear redirecting state on error so UI doesn't get stuck
         setRedirecting(false);
         setIsInitializing(false);

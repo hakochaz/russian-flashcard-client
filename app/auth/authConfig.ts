@@ -14,8 +14,8 @@ export const msalConfig: Configuration = {
     redirectUri: configuredRedirect,
   },
   cache: {
-    cacheLocation: "sessionStorage",
-    storeAuthStateInCookie: false,
+    cacheLocation: "localStorage",
+    storeAuthStateInCookie: true,
   },
 };
 

@@ -1,5 +1,5 @@
 import type { Route } from "./+types/all-sentences";
-import { Container, Title, Text, Button, Paper, Group, Stack, TextInput } from "@mantine/core";
+import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
 import { fetchPhraseById, fetchCardCount, fetchWordData, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
@@ -22,8 +22,17 @@ export default function AllSentences() {
   const [error, setError] = useState<string | null>(null);
   const [goToCardInput, setGoToCardInput] = useState("");
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [importFading, setImportFading] = useState(false);
 
   const { acquireToken } = useAuth();
+
+  const handleImportSuccess = () => {
+    setImportSuccess(true);
+    setImportFading(false);
+    setTimeout(() => setImportFading(true), 2000);
+    setTimeout(() => setImportSuccess(false), 4000);
+  };
 
   // Load total card count on mount
   useEffect(() => {
@@ -177,6 +186,11 @@ export default function AllSentences() {
       </div>
 
       <Stack gap="xl">
+        {importSuccess && (
+          <Alert color="teal" style={{ position: "fixed", top: 72, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: importFading ? 0 : 1 }}>
+            Imported successfully!
+          </Alert>
+        )}
         <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">
           <Group justify="space-between" align="center">
             <Text size="sm" c="dimmed" className="flex items-center gap-2">
@@ -243,6 +257,7 @@ export default function AllSentences() {
                       wordData={selectedWordDataList[currentSelectedWordIndex]}
                       isLoading={false}
                       onBack={handleBackToSentence}
+                      onImportSuccess={handleImportSuccess}
                     />
 
                     <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">

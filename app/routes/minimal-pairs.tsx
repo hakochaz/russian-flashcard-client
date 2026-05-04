@@ -528,7 +528,7 @@ export default function MinimalPairs() {
   const [leftText, rightText] = splitPair(pairText);
 
   return (
-    <Container size="xl" className="pt-16 pb-16">
+    <Container size="xl" className="pt-6 pb-16">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-end" wrap="wrap">
           <div>

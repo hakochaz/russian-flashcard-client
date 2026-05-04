@@ -1,7 +1,7 @@
 import type { Route } from "./+types/shadowing";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, ActionIcon, Select, Textarea } from "@mantine/core";
 import { useState, useEffect, useRef } from "react";
-import { addShadowingEntry, fetchShadowingById, fetchShadowingCount, sortPronunciations, type ShadowingEntity, type Pronunciation } from "../api/api";
+import { addShadowingEntry, fetchShadowingById, fetchShadowingCount, getStressedSentence, sortPronunciations, type ShadowingEntity, type Pronunciation } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 
 export function meta({}: Route.MetaArgs) {
@@ -28,6 +28,7 @@ export default function Shadowing() {
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shownRandomIds, setShownRandomIds] = useState<Set<number>>(new Set());
+  const [stressedSentence, setStressedSentence] = useState<string | null>(null);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
   const loadedEntityRef = useRef<string | null>(null);
 
@@ -89,11 +90,13 @@ export default function Shadowing() {
         const token = await acquireToken();
         const entity = await fetchShadowingById(currentRowId, token);
         if (entity) {
-          // Sort pronunciations by country (Russia first) and gender (Male first)
           if (entity.pronunciations) {
             entity.pronunciations = sortPronunciations(entity.pronunciations);
           }
           setCurrentEntity(entity);
+          setStressedSentence(null);
+          const stressed = await getStressedSentence(entity.entity.Sentence, token);
+          setStressedSentence(stressed);
         } else {
           setError("Item not found");
           setCurrentEntity(null);
@@ -112,10 +115,13 @@ export default function Shadowing() {
   // Handle keyboard navigation with arrow keys
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "ArrowLeft") {
         handlePrevious();
       } else if (e.key === "ArrowRight") {
         handleNext();
+      } else if (e.key === "r" || e.key === "R") {
+        handleRandom();
       }
     };
 
@@ -218,7 +224,7 @@ export default function Shadowing() {
   };
 
   return (
-    <Container size="md" className="pt-16 pb-16">
+    <Container size="md" className="pt-6 pb-16">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-end" wrap="wrap">
           <div>
@@ -320,7 +326,7 @@ export default function Shadowing() {
           <>
             <Paper p="xl" radius="md" withBorder bg="blue.0">
               <Text size="xl" fw={600} ta="center" style={{ lineHeight: 1.6 }}>
-                {currentEntity.entity.Sentence}
+                {stressedSentence || currentEntity.entity.Sentence}
               </Text>
             </Paper>
 

@@ -1,5 +1,5 @@
 import type { Route } from "./+types/create";
-import { Container, Title, Text, Button, Paper, Group, Stack, TextInput } from "@mantine/core";
+import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
 import { fetchWordData, synthesizeSentenceAudio, getStressedSentence, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
@@ -17,8 +17,17 @@ export default function Create() {
   const [selectedWordDataList, setSelectedWordDataList] = useState<WordData[]>([]);
   const [currentSelectedWordIndex, setCurrentSelectedWordIndex] = useState(0);
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
+  const [importFading, setImportFading] = useState(false);
 
   const { acquireToken } = useAuth();
+
+  const handleImportSuccess = () => {
+    setImportSuccess(true);
+    setImportFading(false);
+    setTimeout(() => setImportFading(true), 2000);
+    setTimeout(() => setImportSuccess(false), 4000);
+  };
 
   // Handle keyboard navigation with arrow keys
   useEffect(() => {
@@ -120,8 +129,13 @@ export default function Create() {
   const isAtLastWord = currentSelectedWordIndex === selectedWords.length - 1;
 
   return (
-    <Container size="md" className="pt-16 pb-16">
+    <Container size="md" className="pt-6 pb-16">
       <Stack gap="lg">
+        {importSuccess && (
+          <Alert color="teal" style={{ position: "fixed", top: 72, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: importFading ? 0 : 1 }}>
+            Imported successfully!
+          </Alert>
+        )}
         <div>
           <Title order={2}>Create Sentence Cards</Title>
           <Text mt="sm" c="dimmed">
@@ -158,6 +172,7 @@ export default function Create() {
                       wordData={selectedWordDataList[currentSelectedWordIndex]}
                       isLoading={false}
                       onBack={handleBackToSentence}
+                      onImportSuccess={handleImportSuccess}
                     />
 
                     <Group justify="space-between" mt="xl">

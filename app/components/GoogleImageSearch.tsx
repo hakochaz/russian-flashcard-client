@@ -3,6 +3,7 @@ import { Paper, Text } from "@mantine/core";
 
 interface GoogleImageSearchProps {
   searchQuery: string;
+  onImageSelect?: (url: string) => void;
 }
 
 // Extend Window interface to include Google Custom Search types
@@ -22,7 +23,7 @@ declare global {
   }
 }
 
-export function GoogleImageSearch({ searchQuery }: GoogleImageSearchProps) {
+export function GoogleImageSearch({ searchQuery, onImageSelect }: GoogleImageSearchProps) {
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const previousQueryRef = useRef<string>("");
   const searchIdRef = useRef<number>(0);
@@ -109,6 +110,57 @@ export function GoogleImageSearch({ searchQuery }: GoogleImageSearchProps) {
       }
     }
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (!onImageSelect || !searchContainerRef.current) return;
+
+    const container = searchContainerRef.current;
+
+    const handleClick = (e: MouseEvent) => {
+      const img = (e.target as HTMLElement).closest("img") as HTMLImageElement | null;
+      if (!img) return;
+
+      // Try to extract the real image URL from the surrounding anchor
+      const anchor = img.closest("a") as HTMLAnchorElement | null;
+      let url = "";
+
+      if (anchor?.href) {
+        // Google CSE encodes the actual image URL as an `imgurl` query param
+        try {
+          const params = new URL(anchor.href).searchParams;
+          const imgurl = params.get("imgurl") || params.get("url");
+          if (imgurl) url = imgurl;
+        } catch {}
+
+        // Or if the href itself is a direct image URL
+        if (!url && /\.(jpe?g|png|gif|webp|svg)(\?|$)/i.test(anchor.href)) {
+          url = anchor.href;
+        }
+      }
+
+      // Fall back to the img src, skipping Google proxy thumbnails
+      if (!url && img.src && !img.src.startsWith("data:")) {
+        url = img.src;
+      }
+
+      if (url) {
+        onImageSelect(url);
+
+        // Close the CSE preview panel
+        const closeBtn = document.querySelector<HTMLElement>(
+          ".gsc-imageResult-close, .gs-close-button, [class*='close']"
+        );
+        if (closeBtn) {
+          closeBtn.click();
+        } else {
+          document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", keyCode: 27, bubbles: true }));
+        }
+      }
+    };
+
+    container.addEventListener("click", handleClick);
+    return () => container.removeEventListener("click", handleClick);
+  }, [onImageSelect]);
 
   return (
     <Paper p="lg" radius="md" withBorder mt="lg">

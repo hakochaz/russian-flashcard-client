@@ -126,7 +126,7 @@ export default function Letters() {
   const isAtLastItem = currentIndex === russianLetters.length - 1;
 
   return (
-    <Container size="md" className="pt-16 pb-16">
+    <Container size="md" className="pt-6 pb-16">
       <Stack gap="lg">
         <Group justify="space-between" align="flex-end" wrap="wrap">
           <div>

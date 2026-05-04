@@ -73,6 +73,28 @@ export function sortPronunciations(pronunciations: Pronunciation[]): Pronunciati
   });
 }
 
+// API function to fetch Forvo audio as base64
+export async function streamForvoBase64(url: string, bearerToken?: string): Promise<string> {
+  try {
+    const apiUrl = `${apiBaseUrl.replace(/\/$/, "")}/api/forvo/stream-base64`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ url }),
+    });
+
+    if (!response.ok) return "";
+    const data = await response.json();
+    return data.base64 || "";
+  } catch {
+    return "";
+  }
+}
+
 // API function to search Forvo for a phrase
 export async function searchForvoPhrase(phrase: string, bearerToken?: string): Promise<ForvoSearchResult[]> {
   try {

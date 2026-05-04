@@ -134,7 +134,7 @@ export default function CreateGrammar() {
   };
 
   return (
-    <Container size="md" className="pt-16 pb-16">
+    <Container size="md" className="pt-6 pb-16">
       <Stack gap="lg">
         <div>
           <Title order={2}>Create Grammar Cards</Title>

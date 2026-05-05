@@ -162,6 +162,18 @@ export default function ForvoSearch() {
     setCurrentSelectedWordIndex(0);
   };
 
+  const handleDismissCurrentCard = () => {
+    if (selectedWords.length <= 1) {
+      handleBackToSentence();
+      return;
+    }
+    const newWords = selectedWords.filter((_, i) => i !== currentSelectedWordIndex);
+    const newDataList = selectedWordDataList.filter((_, i) => i !== currentSelectedWordIndex);
+    setSelectedWords(newWords);
+    setSelectedWordDataList(newDataList);
+    setCurrentSelectedWordIndex(prev => Math.min(prev, newWords.length - 1));
+  };
+
   const handlePreviousWord = () => {
     if (currentSelectedWordIndex > 0) {
       setCurrentSelectedWordIndex(prev => prev - 1);
@@ -257,6 +269,7 @@ export default function ForvoSearch() {
                       isLoading={false}
                       onBack={handleBackToSentence}
                       onImportSuccess={handleImportSuccess}
+                      onImportDismiss={handleDismissCurrentCard}
                       isForvoAudio={true}
                     />
 

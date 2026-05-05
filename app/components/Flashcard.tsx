@@ -13,11 +13,12 @@ interface FlashcardProps {
   isLoading: boolean;
   onBack: () => void;
   onImportSuccess?: () => void;
+  onImportDismiss?: () => void;
   isForvoAudio?: boolean;
   imageUrl?: string;
 }
 
-export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, onImportSuccess, isForvoAudio = false, imageUrl }: FlashcardProps) {
+export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, onImportSuccess, onImportDismiss, isForvoAudio = false, imageUrl }: FlashcardProps) {
   const [localImageUrl, setLocalImageUrl] = useState(imageUrl || "");
   const [importError, setImportError] = useState(false);
   const { acquireToken } = useAuth();
@@ -346,7 +347,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                 if (noteData.error) throw new Error(`addNote error: ${noteData.error}`);
 
                 onImportSuccess?.();
-                onBack();
+                (onImportDismiss ?? onBack)();
               } catch {
                 setImportError(true);
               }

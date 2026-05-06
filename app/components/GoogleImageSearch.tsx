@@ -55,57 +55,50 @@ export function GoogleImageSearch({ searchQuery, onImageSelect }: GoogleImageSea
         }
       }
 
-      // Wait for the CSE input to appear, then fill, search, and click Images tab
-      const fillAndSearch = (attempts = 0) => {
+      setTimeout(() => {
         const container = searchContainerRef.current;
         if (!container) return;
 
         const searchBox = container.querySelector("input.gsc-input") as HTMLInputElement | null;
-        if (!searchBox) {
-          if (attempts < 40) setTimeout(() => fillAndSearch(attempts + 1), 200);
-          return;
-        }
+        if (!searchBox) return;
 
         searchBox.value = searchQuery;
         const btn = container.querySelector("button.gsc-search-button") as HTMLButtonElement | null;
         if (!btn) return;
 
-        btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); }, { once: true, capture: true });
         btn.click();
 
-        const clickImagesTab = (tabAttempts = 0) => {
-          const tabs = container.querySelectorAll(".gsc-tabHeader");
+        const clickImagesTab = (attempts = 0) => {
+          if (!searchContainerRef.current) return;
+          const tabs = searchContainerRef.current.querySelectorAll(".gsc-tabHeader");
           for (const tab of Array.from(tabs)) {
             if (/^images?$/i.test(tab.textContent?.trim() ?? "")) {
               (tab as HTMLElement).click();
               return;
             }
           }
-          if (tabAttempts < 20) setTimeout(() => clickImagesTab(tabAttempts + 1), 200);
+          if (attempts < 30) setTimeout(() => clickImagesTab(attempts + 1), 200);
         };
-        setTimeout(() => clickImagesTab(), 300);
-      };
-      setTimeout(() => fillAndSearch(), 100);
+        setTimeout(() => clickImagesTab(), 500);
+      }, 500);
     };
 
     if (window.google?.search?.cse?.element) {
       executeSearch();
-      return;
-    }
-
-    const interval = setInterval(() => {
-      if (window.google?.search?.cse?.element) {
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.search?.cse?.element) {
+          clearInterval(interval);
+          clearTimeout(timeout);
+          executeSearch();
+        }
+      }, 100);
+      const timeout = setTimeout(() => clearInterval(interval), 10000);
+      return () => {
         clearInterval(interval);
         clearTimeout(timeout);
-        executeSearch();
-      }
-    }, 100);
-    const timeout = setTimeout(() => clearInterval(interval), 10000);
-
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeout);
-    };
+      };
+    }
   }, [searchQuery]);
 
   useEffect(() => {

@@ -55,35 +55,37 @@ export function GoogleImageSearch({ searchQuery, onImageSelect }: GoogleImageSea
         }
       }
 
-      // Fill the search box, trigger search, then switch to Images tab
-      setTimeout(() => {
+      // Wait for the CSE input to appear, then fill, search, and click Images tab
+      const fillAndSearch = (attempts = 0) => {
         const container = searchContainerRef.current;
         if (!container) return;
 
         const searchBox = container.querySelector("input.gsc-input") as HTMLInputElement | null;
-        if (searchBox) {
-          searchBox.value = searchQuery;
-          const btn = container.querySelector("button.gsc-search-button") as HTMLButtonElement | null;
-          if (btn) {
-            btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); }, { once: true, capture: true });
-            setTimeout(() => {
-              btn.click();
-              // After search fires, wait for tabs to render then click Images
-              const clickImagesTab = (attempts = 0) => {
-                const tabs = container.querySelectorAll(".gsc-tabHeader");
-                for (const tab of Array.from(tabs)) {
-                  if (/^images?$/i.test(tab.textContent?.trim() ?? "")) {
-                    (tab as HTMLElement).click();
-                    return;
-                  }
-                }
-                if (attempts < 20) setTimeout(() => clickImagesTab(attempts + 1), 200);
-              };
-              setTimeout(() => clickImagesTab(), 300);
-            }, 100);
-          }
+        if (!searchBox) {
+          if (attempts < 40) setTimeout(() => fillAndSearch(attempts + 1), 200);
+          return;
         }
-      }, 500);
+
+        searchBox.value = searchQuery;
+        const btn = container.querySelector("button.gsc-search-button") as HTMLButtonElement | null;
+        if (!btn) return;
+
+        btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); }, { once: true, capture: true });
+        btn.click();
+
+        const clickImagesTab = (tabAttempts = 0) => {
+          const tabs = container.querySelectorAll(".gsc-tabHeader");
+          for (const tab of Array.from(tabs)) {
+            if (/^images?$/i.test(tab.textContent?.trim() ?? "")) {
+              (tab as HTMLElement).click();
+              return;
+            }
+          }
+          if (tabAttempts < 20) setTimeout(() => clickImagesTab(tabAttempts + 1), 200);
+        };
+        setTimeout(() => clickImagesTab(), 300);
+      };
+      setTimeout(() => fillAndSearch(), 100);
     };
 
     if (window.google?.search?.cse?.element) {

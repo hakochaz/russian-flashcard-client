@@ -1,4 +1,4 @@
-import { Button, Paper, Group, Stack, CopyButton, ActionIcon, Tooltip, Text, TextInput, Alert } from "@mantine/core";
+import { Button, Paper, Group, Stack, CopyButton, ActionIcon, Tooltip, Text, TextInput, Alert, Modal } from "@mantine/core";
 import type { Phrase, WordData } from "../api/api";
 import { streamForvoBase64 } from "../api/api";
 import { GoogleImageSearch } from "./GoogleImageSearch";
@@ -21,6 +21,7 @@ interface FlashcardProps {
 export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, onImportSuccess, onImportDismiss, isForvoAudio = false, imageUrl }: FlashcardProps) {
   const [localImageUrl, setLocalImageUrl] = useState(imageUrl || "");
   const [importError, setImportError] = useState(false);
+  const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const { acquireToken } = useAuth();
   return (
     <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
@@ -167,13 +168,19 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
               <div>
                 <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Image URL</Text>
                 <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
-                  <TextInput
-                    placeholder="https://example.com/image.jpg"
-                    value={localImageUrl}
-                    onChange={e => setLocalImageUrl(e.currentTarget.value)}
-                    size="sm"
-                    variant="unstyled"
-                  />
+                  <Group gap="xs" wrap="nowrap">
+                    <TextInput
+                      placeholder="https://example.com/image.jpg"
+                      value={localImageUrl}
+                      onChange={e => setLocalImageUrl(e.currentTarget.value)}
+                      size="sm"
+                      variant="unstyled"
+                      style={{ flex: 1 }}
+                    />
+                    <Button size="xs" variant="light" onClick={() => setImageSearchOpen(true)}>
+                      Search
+                    </Button>
+                  </Group>
                 </Paper>
               </div>
             </Group>
@@ -185,9 +192,21 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
         )}
       </Stack>
 
-      {wordData && (
-        <GoogleImageSearch searchQuery={selectedWord} onImageSelect={setLocalImageUrl} />
-      )}
+      <Modal
+        opened={imageSearchOpen}
+        onClose={() => setImageSearchOpen(false)}
+        title={`Image search: ${selectedWord}`}
+        size="90%"
+        styles={{ body: { height: "80vh", overflowY: "auto" } }}
+      >
+        <GoogleImageSearch
+          searchQuery={selectedWord}
+          onImageSelect={(url) => {
+            setLocalImageUrl(url);
+            setImageSearchOpen(false);
+          }}
+        />
+      </Modal>
 
       {/* Import Button for Anki/Media */}
       {wordData && (

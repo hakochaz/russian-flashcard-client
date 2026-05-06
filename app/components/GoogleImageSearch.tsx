@@ -86,17 +86,24 @@ export function GoogleImageSearch({ searchQuery, onImageSelect }: GoogleImageSea
       }, 500);
     };
 
-    if (window.google?.search?.cse) {
+    if (window.google?.search?.cse?.element) {
       executeSearch();
-    } else {
-      const interval = setInterval(() => {
-        if (window.google?.search?.cse) {
-          clearInterval(interval);
-          executeSearch();
-        }
-      }, 100);
-      setTimeout(() => clearInterval(interval), 10000);
+      return;
     }
+
+    const interval = setInterval(() => {
+      if (window.google?.search?.cse?.element) {
+        clearInterval(interval);
+        clearTimeout(timeout);
+        executeSearch();
+      }
+    }, 100);
+    const timeout = setTimeout(() => clearInterval(interval), 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, [searchQuery]);
 
   useEffect(() => {

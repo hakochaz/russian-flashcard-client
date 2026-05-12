@@ -1,6 +1,6 @@
-import { Button, Paper, Group, Stack, CopyButton, ActionIcon, Tooltip, Text, TextInput, Alert, Modal } from "@mantine/core";
+import { Button, Paper, Group, Stack, CopyButton, ActionIcon, Tooltip, Text, TextInput, Alert, Modal, Image } from "@mantine/core";
 import type { Phrase, WordData } from "../api/api";
-import { streamForvoBase64 } from "../api/api";
+import { streamForvoBase64, generateWordImage, generateImageFromPrompt } from "../api/api";
 import { GoogleImageSearch } from "./GoogleImageSearch";
 import { useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -22,7 +22,51 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
   const [localImageUrl, setLocalImageUrl] = useState(imageUrl || "");
   const [importError, setImportError] = useState(false);
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
+  const [imageGenLoading, setImageGenLoading] = useState(false);
+  const [imageGenModalOpen, setImageGenModalOpen] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState("");
+  const [generatedImagePrompt, setGeneratedImagePrompt] = useState("");
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [customPromptLoading, setCustomPromptLoading] = useState(false);
   const { acquireToken } = useAuth();
+
+  const handleGenerateImage = async () => {
+    if (!wordData) return;
+    setImageGenLoading(true);
+    try {
+      const token = await acquireToken().catch(() => undefined);
+      const result = await generateWordImage(
+        wordData.baseForm,
+        phrase.Phrase,
+        wordData.englishTranslation,
+        token
+      );
+      if (result) {
+        setGeneratedImageUrl(result.imageUrl);
+        setGeneratedImagePrompt(result.prompt);
+        setImageGenModalOpen(true);
+      }
+    } finally {
+      setImageGenLoading(false);
+    }
+  };
+
+  const handleGenerateFromPrompt = async () => {
+    if (!customPrompt.trim()) return;
+    setCustomPromptLoading(true);
+    try {
+      const token = await acquireToken().catch(() => undefined);
+      const imageUrl = await generateImageFromPrompt(customPrompt.trim(), token);
+      if (imageUrl) {
+        setGeneratedImageUrl(imageUrl);
+        setGeneratedImagePrompt(customPrompt.trim());
+        setImageGenModalOpen(true);
+      }
+    } finally {
+      setCustomPromptLoading(false);
+    }
+  };
+
   return (
     <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
       <Stack gap="lg">
@@ -180,10 +224,47 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                     <Button size="xs" variant="light" onClick={() => setImageSearchOpen(true)}>
                       Search
                     </Button>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      color="violet"
+                      onClick={handleGenerateImage}
+                      loading={imageGenLoading}
+                    >
+                      Generate
+                    </Button>
                   </Group>
                 </Paper>
               </div>
             </Group>
+
+            {/* Custom prompt image generation */}
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Custom Image Prompt</Text>
+              <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+                <Group gap="xs" wrap="nowrap">
+                  <TextInput
+                    placeholder="Describe the image you want to generate..."
+                    value={customPrompt}
+                    onChange={e => setCustomPrompt(e.currentTarget.value)}
+                    size="sm"
+                    variant="unstyled"
+                    style={{ flex: 1 }}
+                    onKeyDown={e => { if (e.key === "Enter") handleGenerateFromPrompt(); }}
+                  />
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="violet"
+                    onClick={handleGenerateFromPrompt}
+                    loading={customPromptLoading}
+                    disabled={!customPrompt.trim()}
+                  >
+                    Generate
+                  </Button>
+                </Group>
+              </Paper>
+            </div>
           </Stack>
         ) : (
           <div className="flex items-center justify-center py-12">
@@ -206,6 +287,33 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
             setImageSearchOpen(false);
           }}
         />
+      </Modal>
+
+      <Modal
+        opened={imageGenModalOpen}
+        onClose={() => setImageGenModalOpen(false)}
+        title={`Generated image: ${wordData?.baseForm}`}
+        size="lg"
+      >
+        <Stack gap="md">
+          {generatedImagePrompt && (
+            <Text size="xs" c="dimmed">{generatedImagePrompt}</Text>
+          )}
+          {generatedImageUrl && (
+            <Tooltip label="Click to use this image" withArrow>
+              <Image
+                src={generatedImageUrl}
+                alt="Generated flashcard image"
+                radius="md"
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  setLocalImageUrl(generatedImageUrl);
+                  setImageGenModalOpen(false);
+                }}
+              />
+            </Tooltip>
+          )}
+        </Stack>
       </Modal>
 
       {/* Import Button for Anki/Media */}
@@ -266,28 +374,48 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                 }
               };
 
-              // Helper to fetch image as base64 (direct fetch)
+              // Resize a blob to half its dimensions, returned as JPEG base64
+              const resizeBlob = (blob: Blob): Promise<string> => {
+                return new Promise((resolve) => {
+                  const objectUrl = URL.createObjectURL(blob);
+                  const img = new window.Image();
+                  img.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.floor(img.naturalWidth / 4);
+                    canvas.height = Math.floor(img.naturalHeight / 4);
+                    const ctx = canvas.getContext("2d");
+                    if (!ctx) { resolve(""); return; }
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1] || "");
+                  };
+                  img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(""); };
+                  img.src = objectUrl;
+                });
+              };
+
+              // Helper to fetch image as base64, resized to half dimensions
               const getImageBase64 = async (): Promise<string> => {
                 if (!localImageUrl) return "";
                 try {
                   const response = await fetch(localImageUrl);
+                  if (!response.ok) throw new Error(`HTTP ${response.status}`);
                   const blob = await response.blob();
-                  return await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      const result = reader.result;
-                      if (typeof result === "string") {
-                        const base64 = result.split(",")[1] || "";
-                        resolve(base64);
-                      } else {
-                        resolve("");
-                      }
-                    };
-                    reader.onerror = () => resolve("");
-                    reader.readAsDataURL(blob);
-                  });
-                } catch (e) {
-                  return "";
+                  return await resizeBlob(blob);
+                } catch {
+                  // Direct fetch failed (e.g. CORS on Azure DALL-E URLs) — proxy via server
+                  try {
+                    const token = await acquireToken().catch(() => undefined);
+                    const base64 = await streamForvoBase64(localImageUrl, token);
+                    if (!base64) return "";
+                    const binaryStr = atob(base64);
+                    const bytes = new Uint8Array(binaryStr.length);
+                    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                    const blob = new Blob([bytes], { type: "image/png" });
+                    return await resizeBlob(blob);
+                  } catch {
+                    return "";
+                  }
                 }
               };
 

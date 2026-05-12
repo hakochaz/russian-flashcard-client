@@ -566,6 +566,68 @@ export async function addMinimalPairEntry(
   }
 }
 
+// API function to generate an image from a custom prompt
+export async function generateImageFromPrompt(
+  prompt: string,
+  bearerToken?: string
+): Promise<string | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/generate-image-from-prompt`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.imageUrl || null;
+  } catch (error) {
+    console.error("Failed to generate image from prompt:", error);
+    return null;
+  }
+}
+
+// API function to generate a word image via DALL-E
+export async function generateWordImage(
+  word: string,
+  sentence: string,
+  englishTranslation: string,
+  bearerToken?: string
+): Promise<{ imageUrl: string; prompt: string } | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/generate-word-image`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ word, sentence, englishTranslation }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return { imageUrl: data.imageUrl, prompt: data.prompt };
+  } catch (error) {
+    console.error("Failed to generate word image:", error);
+    return null;
+  }
+}
+
 export type {
   Phrase,
   WordData,

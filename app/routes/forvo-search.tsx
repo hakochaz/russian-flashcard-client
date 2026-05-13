@@ -1,7 +1,7 @@
 import type { Route } from "./+types/forvo-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, type Phrase, type WordData, type ForvoSearchResult } from "../api/api";
+import { searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -80,7 +80,7 @@ export default function ForvoSearch() {
         // Flatten and convert to Phrase objects with unique IDs
         const seenPhrases = new Set<string>();
         let resultIndex = 0;
-        const resultsWithoutStress = forvoResultsArray.flat().map((forvoResult, idx) => {
+        const resultsWithoutStress = forvoResultsArray.flat().map((forvoResult) => {
           if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
             seenPhrases.add(forvoResult.phrase);
             return {
@@ -228,7 +228,7 @@ export default function ForvoSearch() {
             placeholder="Enter a phrase to search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.currentTarget.value)}
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 handleSearch();
               }
@@ -263,6 +263,7 @@ export default function ForvoSearch() {
                 ) : selectedWordDataList.length > 0 ? (
                   <>
                     <Flashcard
+                      key={`${currentSelectedWordIndex}-${selectedWords[currentSelectedWordIndex]}`}
                       phrase={currentPhrase}
                       selectedWord={selectedWords[currentSelectedWordIndex]}
                       wordData={selectedWordDataList[currentSelectedWordIndex]}

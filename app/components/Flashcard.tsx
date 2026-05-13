@@ -20,11 +20,12 @@ interface FlashcardProps {
 
 export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, onImportSuccess, onImportDismiss, isForvoAudio = false, imageUrl }: FlashcardProps) {
   const [localImageUrl, setLocalImageUrl] = useState(imageUrl || "");
+  const [localImageBase64, setLocalImageBase64] = useState("");
   const [importError, setImportError] = useState(false);
   const [imageSearchOpen, setImageSearchOpen] = useState(false);
   const [imageGenLoading, setImageGenLoading] = useState(false);
   const [imageGenModalOpen, setImageGenModalOpen] = useState(false);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState("");
+  const [generatedImageBase64, setGeneratedImageBase64] = useState("");
   const [generatedImagePrompt, setGeneratedImagePrompt] = useState("");
   const [customPrompt, setCustomPrompt] = useState("");
   const [customPromptLoading, setCustomPromptLoading] = useState(false);
@@ -42,7 +43,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
         token
       );
       if (result) {
-        setGeneratedImageUrl(result.imageUrl);
+        setGeneratedImageBase64(result.imageBase64);
         setGeneratedImagePrompt(result.prompt);
         setImageGenModalOpen(true);
       }
@@ -56,9 +57,9 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
     setCustomPromptLoading(true);
     try {
       const token = await acquireToken().catch(() => undefined);
-      const imageUrl = await generateImageFromPrompt(customPrompt.trim(), token);
-      if (imageUrl) {
-        setGeneratedImageUrl(imageUrl);
+      const result = await generateImageFromPrompt(customPrompt.trim(), token);
+      if (result) {
+        setGeneratedImageBase64(result.imageBase64);
         setGeneratedImagePrompt(customPrompt.trim());
         setImageGenModalOpen(true);
       }
@@ -210,17 +211,33 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                 </Paper>
               </div>
               <div>
-                <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Image URL</Text>
+                <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Image</Text>
                 <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
                   <Group gap="xs" wrap="nowrap">
-                    <TextInput
-                      placeholder="https://example.com/image.jpg"
-                      value={localImageUrl}
-                      onChange={e => setLocalImageUrl(e.currentTarget.value)}
-                      size="sm"
-                      variant="unstyled"
-                      style={{ flex: 1 }}
-                    />
+                    {localImageBase64 ? (
+                      <Group gap="xs" style={{ flex: 1 }} align="center" wrap="nowrap">
+                        <Image
+                          src={`data:image/jpeg;base64,${localImageBase64}`}
+                          alt="AI generated"
+                          w={36}
+                          h={36}
+                          radius="sm"
+                          fit="cover"
+                          style={{ flexShrink: 0 }}
+                        />
+                        <Text size="sm" c="violet.7" fw={500} style={{ flex: 1 }}>AI generated image</Text>
+                        <ActionIcon size="sm" variant="subtle" color="red" onClick={() => setLocalImageBase64("")}>×</ActionIcon>
+                      </Group>
+                    ) : (
+                      <TextInput
+                        placeholder="https://example.com/image.jpg"
+                        value={localImageUrl}
+                        onChange={e => setLocalImageUrl(e.currentTarget.value)}
+                        size="sm"
+                        variant="unstyled"
+                        style={{ flex: 1 }}
+                      />
+                    )}
                     <Button size="xs" variant="light" onClick={() => setImageSearchOpen(true)}>
                       Search
                     </Button>
@@ -283,6 +300,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
         <GoogleImageSearch
           searchQuery={selectedWord}
           onImageSelect={(url) => {
+            setLocalImageBase64("");
             setLocalImageUrl(url);
             setImageSearchOpen(false);
           }}
@@ -299,15 +317,16 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
           {generatedImagePrompt && (
             <Text size="xs" c="dimmed">{generatedImagePrompt}</Text>
           )}
-          {generatedImageUrl && (
+          {generatedImageBase64 && (
             <Tooltip label="Click to use this image" withArrow>
               <Image
-                src={generatedImageUrl}
+                src={`data:image/jpeg;base64,${generatedImageBase64}`}
                 alt="Generated flashcard image"
                 radius="md"
                 style={{ cursor: "pointer" }}
                 onClick={() => {
-                  setLocalImageUrl(generatedImageUrl);
+                  setLocalImageUrl("");
+                  setLocalImageBase64(generatedImageBase64);
                   setImageGenModalOpen(false);
                 }}
               />
@@ -374,45 +393,45 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                 }
               };
 
-              // Resize a blob to half its dimensions, returned as JPEG base64
-              const resizeBlob = (blob: Blob): Promise<string> => {
+              const resizeBase64 = (base64: string): Promise<string> => {
                 return new Promise((resolve) => {
-                  const objectUrl = URL.createObjectURL(blob);
                   const img = new window.Image();
                   img.onload = () => {
-                    URL.revokeObjectURL(objectUrl);
                     const canvas = document.createElement("canvas");
                     canvas.width = Math.floor(img.naturalWidth / 4);
                     canvas.height = Math.floor(img.naturalHeight / 4);
                     const ctx = canvas.getContext("2d");
-                    if (!ctx) { resolve(""); return; }
+                    if (!ctx) { resolve(base64); return; }
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1] || "");
+                    resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1] || base64);
                   };
-                  img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(""); };
-                  img.src = objectUrl;
+                  img.onerror = () => resolve(base64);
+                  img.src = `data:image/jpeg;base64,${base64}`;
                 });
               };
 
-              // Helper to fetch image as base64, resized to half dimensions
+              // Helper to fetch image as base64
               const getImageBase64 = async (): Promise<string> => {
+                if (localImageBase64) return await resizeBase64(localImageBase64);
                 if (!localImageUrl) return "";
                 try {
                   const response = await fetch(localImageUrl);
                   if (!response.ok) throw new Error(`HTTP ${response.status}`);
                   const blob = await response.blob();
-                  return await resizeBlob(blob);
+                  return await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      const result = reader.result;
+                      resolve(typeof result === "string" ? result.split(",")[1] || "" : "");
+                    };
+                    reader.onerror = () => resolve("");
+                    reader.readAsDataURL(blob);
+                  });
                 } catch {
-                  // Direct fetch failed (e.g. CORS on Azure DALL-E URLs) — proxy via server
+                  // Direct fetch failed (e.g. CORS) — proxy via server
                   try {
                     const token = await acquireToken().catch(() => undefined);
-                    const base64 = await streamForvoBase64(localImageUrl, token);
-                    if (!base64) return "";
-                    const binaryStr = atob(base64);
-                    const bytes = new Uint8Array(binaryStr.length);
-                    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-                    const blob = new Blob([bytes], { type: "image/png" });
-                    return await resizeBlob(blob);
+                    return await streamForvoBase64(localImageUrl, token) || "";
                   } catch {
                     return "";
                   }
@@ -423,7 +442,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
               const base64Audio = await getAudioBase64();
               let imageFilename = "";
               let base64Image = "";
-              if (localImageUrl) {
+              if (localImageUrl || localImageBase64) {
                 imageFilename = getImageFilename();
                 base64Image = await getImageBase64();
               }
@@ -437,7 +456,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                   data: base64Audio,
                 },
               });
-              if (localImageUrl && base64Image) {
+              if ((localImageUrl || localImageBase64) && base64Image) {
                 storeMediaPayloads.push({
                   action: "storeMediaFile",
                   version: 6,
@@ -463,7 +482,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                       Context: phrase.Phrase,
                       "Context Stress": phrase.PhraseStress,
                       "Context Audio": `[sound:${filename}]`,
-                      Image: localImageUrl && imageFilename ? `<img src='${imageFilename}'>` : "",
+                      Image: (localImageUrl || localImageBase64) && imageFilename ? `<img src='${imageFilename}'>` : "",
                       "Vocab?": "",
                     },
                     tags: ["generated"],

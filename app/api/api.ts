@@ -570,7 +570,7 @@ export async function addMinimalPairEntry(
 export async function generateImageFromPrompt(
   prompt: string,
   bearerToken?: string
-): Promise<string | null> {
+): Promise<{ imageBase64: string } | null> {
   try {
     const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/generate-image-from-prompt`;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -589,7 +589,7 @@ export async function generateImageFromPrompt(
     }
 
     const data = await response.json();
-    return data.imageUrl || null;
+    return data.imageBase64 ? { imageBase64: data.imageBase64 } : null;
   } catch (error) {
     console.error("Failed to generate image from prompt:", error);
     return null;
@@ -602,7 +602,7 @@ export async function generateWordImage(
   sentence: string,
   englishTranslation: string,
   bearerToken?: string
-): Promise<{ imageUrl: string; prompt: string } | null> {
+): Promise<{ imageBase64: string; prompt: string } | null> {
   try {
     const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/generate-word-image`;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -621,7 +621,7 @@ export async function generateWordImage(
     }
 
     const data = await response.json();
-    return { imageUrl: data.imageUrl, prompt: data.prompt };
+    return data.imageBase64 ? { imageBase64: data.imageBase64, prompt: data.prompt } : null;
   } catch (error) {
     console.error("Failed to generate word image:", error);
     return null;

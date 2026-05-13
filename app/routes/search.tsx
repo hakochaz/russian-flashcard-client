@@ -251,6 +251,7 @@ export default function Search() {
                 ) : selectedWordDataList.length > 0 ? (
                   <>
                     <Flashcard
+                      key={currentSelectedWordIndex}
                       phrase={currentPhrase}
                       selectedWord={selectedWords[currentSelectedWordIndex]}
                       wordData={selectedWordDataList[currentSelectedWordIndex]}

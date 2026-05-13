@@ -264,6 +264,7 @@ export default function AllSentences() {
                 ) : selectedWordDataList.length > 0 ? (
                   <>
                     <Flashcard
+                      key={`${currentSelectedWordIndex}-${selectedWords[currentSelectedWordIndex]}`}
                       phrase={currentPhrase}
                       selectedWord={selectedWords[currentSelectedWordIndex]}
                       wordData={selectedWordDataList[currentSelectedWordIndex]}

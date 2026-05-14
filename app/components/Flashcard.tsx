@@ -378,6 +378,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                 }
                 try {
                   const response = await fetch(phrase.Audio);
+                  if (!response.ok) throw new Error(`HTTP ${response.status}`);
                   const blob = await response.blob();
                   return await new Promise<string>((resolve) => {
                     const reader = new FileReader();
@@ -389,7 +390,13 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                     reader.readAsDataURL(blob);
                   });
                 } catch {
-                  return "";
+                  // Direct fetch failed (e.g. CORS on Azure Blob SAS URL) — proxy via server
+                  try {
+                    const token = await acquireToken().catch(() => undefined);
+                    return await streamForvoBase64(phrase.Audio, token) || "";
+                  } catch {
+                    return "";
+                  }
                 }
               };
 

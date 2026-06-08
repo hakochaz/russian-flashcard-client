@@ -40,6 +40,20 @@ interface ShadowingCreateResponse {
   sentence: string;
 }
 
+interface ShadowingFavouriteItem {
+  PartitionKey: string;
+  RowKey: string;
+  Favourite: boolean;
+  Sentence: string;
+  Timestamp: string;
+}
+
+interface ShadowingFavouriteResponse {
+  partitionKey: string;
+  rowKey: string;
+  favourite: boolean;
+}
+
 interface MinimalPairsEntity {
   entity: {
     Pair: string;
@@ -487,6 +501,57 @@ export async function addShadowingEntry(
   }
 }
 
+export async function fetchShadowingFavourites(bearerToken?: string): Promise<ShadowingFavouriteItem[] | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/favourites/Shadowing`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    return data as ShadowingFavouriteItem[];
+  } catch (error) {
+    console.error("Failed to fetch shadowing favourites:", error);
+    return null;
+  }
+}
+
+export async function setShadowingFavourite(
+  rowKey: string,
+  favourite: boolean,
+  bearerToken?: string
+): Promise<ShadowingFavouriteResponse | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/entity/Shadowing/${encodeURIComponent(rowKey)}/favourite`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ favourite }),
+    });
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+    const data = await response.json();
+    return data as ShadowingFavouriteResponse;
+  } catch (error) {
+    console.error("Failed to set shadowing favourite:", error);
+    return null;
+  }
+}
+
 // API function to fetch minimal pairs entity by ID
 export async function fetchMinimalPairById(rowKey: string, bearerToken?: string): Promise<MinimalPairsEntity | null> {
   try {
@@ -635,6 +700,8 @@ export type {
   Pronunciation,
   ShadowingEntity,
   ShadowingCreateResponse,
+  ShadowingFavouriteItem,
+  ShadowingFavouriteResponse,
   MinimalPairsEntity,
   MinimalPairsCreateResponse,
 };

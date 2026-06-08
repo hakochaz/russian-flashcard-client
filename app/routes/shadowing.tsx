@@ -1,7 +1,7 @@
 import type { Route } from "./+types/shadowing";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, ActionIcon, Select, Textarea } from "@mantine/core";
 import { useState, useEffect, useRef } from "react";
-import { addShadowingEntry, fetchShadowingById, fetchShadowingCount, getStressedSentence, sortPronunciations, type ShadowingEntity, type Pronunciation } from "../api/api";
+import { addShadowingEntry, fetchShadowingById, fetchShadowingCount, fetchShadowingFavourites, getStressedSentence, setShadowingFavourite, sortPronunciations, type ShadowingEntity, type ShadowingFavouriteItem, type Pronunciation } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 
 export function meta({}: Route.MetaArgs) {
@@ -29,19 +29,60 @@ export default function Shadowing() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [shownRandomIds, setShownRandomIds] = useState<Set<number>>(new Set());
   const [stressedSentence, setStressedSentence] = useState<string | null>(null);
+  const [isFavouritesMode, setIsFavouritesMode] = useState(false);
+  const [favouritesList, setFavouritesList] = useState<ShadowingFavouriteItem[]>([]);
+  const [favouritesIndex, setFavouritesIndex] = useState(0);
+  const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
+  const [isTogglingFavourite, setIsTogglingFavourite] = useState(false);
+  const [autoReplay, setAutoReplay] = useState(false);
+  const [autoReplayDelay, setAutoReplayDelay] = useState("1");
+  const [autoReplayIndex, setAutoReplayIndex] = useState<number | null>(null);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
   const loadedEntityRef = useRef<string | null>(null);
+  const autoReplayIndexRef = useRef<number | null>(null);
+  const autoReplayDelayRef = useRef(1.0);
+  const autoReplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { acquireToken } = useAuth();
 
+  const stopAutoReplay = () => {
+    if (autoReplayTimerRef.current) {
+      clearTimeout(autoReplayTimerRef.current);
+      autoReplayTimerRef.current = null;
+    }
+    autoReplayIndexRef.current = null;
+    setAutoReplayIndex(null);
+  };
+
   const handlePlayAudio = (index: number) => {
+    if (autoReplayTimerRef.current) {
+      clearTimeout(autoReplayTimerRef.current);
+      autoReplayTimerRef.current = null;
+    }
     const audio = audioRefs.current[index];
     if (audio) {
       audio.currentTime = 0;
       audio.play();
       setPlayCount(prev => prev + 1);
       setPlayingIndex(index);
+      if (autoReplay) {
+        autoReplayIndexRef.current = index;
+        setAutoReplayIndex(index);
+      }
     }
+  };
+
+  const scheduleReplay = (index: number) => {
+    autoReplayTimerRef.current = setTimeout(() => {
+      if (autoReplayIndexRef.current !== index) return;
+      const audio = audioRefs.current[index];
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play();
+        setPlayCount(prev => prev + 1);
+        setPlayingIndex(index);
+      }
+    }, autoReplayDelayRef.current * 1000);
   };
 
   // Load total item count on mount
@@ -61,10 +102,41 @@ export default function Shadowing() {
     loadItemCount();
   }, []);
 
-  // Reset play count when navigating to a different item
+  // Load favourites on mount to initialise heart state
+  useEffect(() => {
+    const loadFavourites = async () => {
+      try {
+        const token = await acquireToken();
+        const favs = await fetchShadowingFavourites(token);
+        if (favs) {
+          setFavouritesList(favs);
+          setFavouriteIds(new Set(favs.map(f => f.RowKey)));
+        }
+      } catch (err) {
+        console.debug("Could not load favourites", err);
+      }
+    };
+    loadFavourites();
+  }, []);
+
+  // Sync delay string to ref so setTimeout callbacks always use the latest value
+  useEffect(() => {
+    const val = parseFloat(autoReplayDelay);
+    autoReplayDelayRef.current = isNaN(val) || val < 0 ? 0 : val;
+  }, [autoReplayDelay]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoReplayTimerRef.current) clearTimeout(autoReplayTimerRef.current);
+    };
+  }, []);
+
+  // Reset play count and stop auto replay when navigating to a different item
   useEffect(() => {
     setPlayCount(0);
     setGoalReached(false);
+    stopAutoReplay();
   }, [currentRowId]);
 
   // Increment sentences complete when replay goal is hit on current card
@@ -127,20 +199,90 @@ export default function Shadowing() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [currentRowId, totalItems]);
+  }, [currentRowId, totalItems, isFavouritesMode, favouritesIndex, favouritesList]);
 
   const handlePrevious = () => {
-    const prevId = parseInt(currentRowId) - 1;
-    if (prevId >= 1) {
-      setCurrentRowId(String(prevId));
+    if (isFavouritesMode) {
+      if (favouritesIndex > 0) {
+        const newIndex = favouritesIndex - 1;
+        setFavouritesIndex(newIndex);
+        setCurrentRowId(favouritesList[newIndex].RowKey);
+      }
+    } else {
+      const prevId = parseInt(currentRowId) - 1;
+      if (prevId >= 1) setCurrentRowId(String(prevId));
     }
   };
 
   const handleNext = () => {
-    if (!isAtLastItem) {
-      const nextId = parseInt(currentRowId) + 1;
-      setCurrentRowId(String(nextId));
+    if (isFavouritesMode) {
+      if (favouritesIndex < favouritesList.length - 1) {
+        const newIndex = favouritesIndex + 1;
+        setFavouritesIndex(newIndex);
+        setCurrentRowId(favouritesList[newIndex].RowKey);
+      }
+    } else {
+      if (!isAtLastItem) {
+        setCurrentRowId(String(parseInt(currentRowId) + 1));
+      }
     }
+  };
+
+  const handleToggleFavourite = async () => {
+    if (isTogglingFavourite) return;
+    const isFav = favouriteIds.has(currentRowId);
+    setIsTogglingFavourite(true);
+    try {
+      const token = await acquireToken();
+      const result = await setShadowingFavourite(currentRowId, !isFav, token);
+      if (result) {
+        const newIds = new Set(favouriteIds);
+        if (!isFav) {
+          newIds.add(currentRowId);
+          setFavouriteIds(newIds);
+        } else {
+          newIds.delete(currentRowId);
+          setFavouriteIds(newIds);
+          if (isFavouritesMode) {
+            const newList = favouritesList.filter(f => f.RowKey !== currentRowId);
+            setFavouritesList(newList);
+            if (newList.length === 0) {
+              setIsFavouritesMode(false);
+            } else {
+              const newIndex = Math.min(favouritesIndex, newList.length - 1);
+              setFavouritesIndex(newIndex);
+              setCurrentRowId(newList[newIndex].RowKey);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.debug("Could not toggle favourite", err);
+    } finally {
+      setIsTogglingFavourite(false);
+    }
+  };
+
+  const handleEnterFavouritesMode = async () => {
+    try {
+      const token = await acquireToken();
+      const favs = await fetchShadowingFavourites(token);
+      if (favs) {
+        setFavouritesList(favs);
+        setFavouriteIds(new Set(favs.map(f => f.RowKey)));
+        if (favs.length > 0) {
+          setFavouritesIndex(0);
+          setCurrentRowId(favs[0].RowKey);
+        }
+      }
+      setIsFavouritesMode(true);
+    } catch (err) {
+      console.debug("Could not load favourites", err);
+    }
+  };
+
+  const handleExitFavouritesMode = () => {
+    setIsFavouritesMode(false);
   };
 
   const handleRandom = () => {
@@ -177,8 +319,14 @@ export default function Shadowing() {
     }
   };
 
-  const isAtFirstItem = currentRowId === "1";
-  const isAtLastItem = totalItems !== null && parseInt(currentRowId) === totalItems;
+  const isFavourite = favouriteIds.has(currentRowId);
+  const isAtFirstItem = isFavouritesMode ? favouritesIndex === 0 : currentRowId === "1";
+  const isAtLastItem = isFavouritesMode
+    ? favouritesIndex >= favouritesList.length - 1
+    : totalItems !== null && parseInt(currentRowId) === totalItems;
+  const counterText = isFavouritesMode
+    ? `${favouritesList.length > 0 ? favouritesIndex + 1 : 0} / ${favouritesList.length}`
+    : `${currentRowId} / ${totalItems || "?"}`;
 
   const handleGoToItem = () => {
     const itemId = goToItemInput.trim();
@@ -235,18 +383,25 @@ export default function Shadowing() {
           </div>
           <Group gap="sm" wrap="nowrap" align="flex-end">
             <Button
-              variant={viewMode === "view" ? "filled" : "light"}
-              onClick={() => setViewMode("view")}
+              variant={viewMode === "view" && !isFavouritesMode ? "filled" : "light"}
+              onClick={() => { setViewMode("view"); setIsFavouritesMode(false); }}
             >
               View all
             </Button>
             <Button
               variant={viewMode === "add" ? "filled" : "light"}
-              onClick={() => setViewMode("add")}
+              onClick={() => { setViewMode("add"); setIsFavouritesMode(false); }}
             >
               Add new
             </Button>
-            {viewMode === "view" && (
+            <Button
+              variant={isFavouritesMode ? "filled" : "light"}
+              color="yellow"
+              onClick={isFavouritesMode ? handleExitFavouritesMode : handleEnterFavouritesMode}
+            >
+              ★ Favourites
+            </Button>
+            {viewMode === "view" && !isFavouritesMode && (
               <Group gap="xs" wrap="nowrap" align="flex-end">
                 <TextInput
                   placeholder="Item No"
@@ -322,9 +477,25 @@ export default function Shadowing() {
           <Paper p="lg" radius="md" withBorder>
             <Text c="red">{error}</Text>
           </Paper>
+        ) : isFavouritesMode && favouritesList.length === 0 ? (
+          <Paper p="lg" radius="md" withBorder>
+            <Text c="dimmed">No favourites yet — heart a sentence to add it.</Text>
+          </Paper>
         ) : currentEntity ? (
           <>
-            <Paper p="xl" radius="md" withBorder bg="blue.0">
+            <Paper p="xl" radius="md" withBorder bg="blue.0" style={{ position: "relative" }}>
+              <ActionIcon
+                variant={isFavourite ? "filled" : "subtle"}
+                color="red"
+                size="md"
+                radius="xl"
+                onClick={handleToggleFavourite}
+                loading={isTogglingFavourite}
+                title={isFavourite ? "Remove from favourites" : "Add to favourites"}
+                style={{ position: "absolute", top: 12, right: 12 }}
+              >
+                {isFavourite ? "♥" : "♡"}
+              </ActionIcon>
               <Text size="xl" fw={600} ta="center" style={{ lineHeight: 1.6 }}>
                 {stressedSentence || currentEntity.entity.Sentence}
               </Text>
@@ -332,17 +503,52 @@ export default function Shadowing() {
 
             <div>
               <Group justify="space-between" align="center" mb="xs">
-                <Group gap="sm" align="center" wrap="nowrap">
+                <Group gap="sm" align="center" wrap="wrap">
                   <Text size="sm" c="dimmed" fw={500}>Replay goal</Text>
                   <TextInput
                     placeholder="e.g. 10"
                     value={replayGoal}
                     onChange={(e) => setReplayGoal(e.currentTarget.value)}
                     size="sm"
-                    w={120}
+                    w={80}
                     type="number"
                     min={1}
                   />
+                  <Button
+                    size="sm"
+                    variant={autoReplay ? "filled" : "light"}
+                    color="grape"
+                    onClick={() => {
+                      if (autoReplay) {
+                        setAutoReplay(false);
+                        stopAutoReplay();
+                      } else {
+                        setAutoReplay(true);
+                      }
+                    }}
+                  >
+                    Auto replay
+                  </Button>
+                  {autoReplay && (
+                    <>
+                      <Text size="sm" c="dimmed">Delay</Text>
+                      <TextInput
+                        value={autoReplayDelay}
+                        onChange={(e) => setAutoReplayDelay(e.currentTarget.value)}
+                        size="sm"
+                        w={70}
+                        type="number"
+                        min={0}
+                        step={0.1}
+                      />
+                      <Text size="sm" c="dimmed">s</Text>
+                    </>
+                  )}
+                  {autoReplayIndex !== null && (
+                    <Button size="sm" color="red" variant="light" onClick={stopAutoReplay}>
+                      Stop
+                    </Button>
+                  )}
                 </Group>
                 <Text size="sm" fw={600}>Sentences complete: {sentencesComplete}</Text>
               </Group>
@@ -363,15 +569,18 @@ export default function Shadowing() {
                         <ActionIcon
                           size="xl"
                           radius="xl"
-                          variant="filled"
-                          color="blue"
-                          onClick={() => handlePlayAudio(index)}
+                          variant={autoReplayIndex === index ? "light" : "filled"}
+                          color={autoReplayIndex === index ? "orange" : "blue"}
+                          onClick={() => autoReplayIndex === index ? stopAutoReplay() : handlePlayAudio(index)}
                         >
-                          ▶
+                          {autoReplayIndex === index ? "■" : "▶"}
                         </ActionIcon>
                         <audio
                           ref={(el) => { audioRefs.current[index] = el; }}
-                          onEnded={() => setPlayingIndex(null)}
+                          onEnded={() => {
+                            setPlayingIndex(null);
+                            if (autoReplayIndexRef.current === index) scheduleReplay(index);
+                          }}
                           style={{ display: 'none' }}
                         >
                           <source src={pronunciation.audioMp3} type="audio/mpeg" />
@@ -411,9 +620,7 @@ export default function Shadowing() {
               >
                 ← Previous
               </Button>
-              <Text c="dimmed">
-                {currentRowId} / {totalItems || "?"}
-              </Text>
+              <Text c="dimmed">{counterText}</Text>
               <Button
                 variant="subtle"
                 onClick={handleNext}

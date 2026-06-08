@@ -68,9 +68,24 @@ interface MinimalPairsCreateResponse {
   pair: string;
 }
 
-// Utility function to sort pronunciations by country (Russia first) and gender (Male first)
+// Usernames that should always be pinned to the top of the pronunciation list,
+// in priority order (earlier entries rank higher).
+const PINNED_USERNAMES = ["BorisK", "moscowspeaker"];
+
+// Utility function to sort pronunciations by country (Russia first) and gender (Male first),
+// with certain hardcoded usernames pinned to the top
 export function sortPronunciations(pronunciations: Pronunciation[]): Pronunciation[] {
   return [...pronunciations].sort((a, b) => {
+    // Pinned usernames take precedence over everything else
+    const aPinIndex = PINNED_USERNAMES.indexOf(a.username);
+    const bPinIndex = PINNED_USERNAMES.indexOf(b.username);
+    const aPinned = aPinIndex !== -1 ? PINNED_USERNAMES.length - aPinIndex : 0;
+    const bPinned = bPinIndex !== -1 ? PINNED_USERNAMES.length - bPinIndex : 0;
+
+    if (aPinned !== bPinned) {
+      return bPinned - aPinned; // Higher pin priority first
+    }
+
     // First, prioritize Russia country
     const aIsRussia = a.country === "Russia" ? 1 : 0;
     const bIsRussia = b.country === "Russia" ? 1 : 0;

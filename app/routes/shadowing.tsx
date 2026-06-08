@@ -35,12 +35,12 @@ export default function Shadowing() {
   const [favouriteIds, setFavouriteIds] = useState<Set<string>>(new Set());
   const [isTogglingFavourite, setIsTogglingFavourite] = useState(false);
   const [autoReplay, setAutoReplay] = useState(false);
-  const [autoReplayDelay, setAutoReplayDelay] = useState("1");
+  const [autoReplayDelay, setAutoReplayDelay] = useState("0");
   const [autoReplayIndex, setAutoReplayIndex] = useState<number | null>(null);
   const audioRefs = useRef<(HTMLAudioElement | null)[]>([]);
   const loadedEntityRef = useRef<string | null>(null);
   const autoReplayIndexRef = useRef<number | null>(null);
-  const autoReplayDelayRef = useRef(1.0);
+  const autoReplayDelayRef = useRef(0);
   const autoReplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { acquireToken } = useAuth();

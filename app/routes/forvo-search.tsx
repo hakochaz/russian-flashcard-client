@@ -77,10 +77,16 @@ export default function ForvoSearch() {
         );
         console.log("Forvo results for all forms:", forvoResultsArray);
 
-        // Flatten and convert to Phrase objects with unique IDs
+        // Put the best (first) result of each variation at the front of the list,
+        // followed by the remaining results for each variation
+        const bestResults = forvoResultsArray.map((results) => results[0]).filter(Boolean);
+        const remainingResults = forvoResultsArray.flatMap((results) => results.slice(1));
+        const orderedResults = [...bestResults, ...remainingResults];
+
+        // Convert to Phrase objects with unique IDs, removing duplicates
         const seenPhrases = new Set<string>();
         let resultIndex = 0;
-        const resultsWithoutStress = forvoResultsArray.flat().map((forvoResult) => {
+        const resultsWithoutStress = orderedResults.map((forvoResult) => {
           if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
             seenPhrases.add(forvoResult.phrase);
             return {

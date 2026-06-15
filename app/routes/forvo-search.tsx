@@ -54,65 +54,76 @@ export default function ForvoSearch() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [selectedWords.length, currentSelectedWordIndex, currentResultIndex, results.length]);
 
+  const performSearch = async (): Promise<Phrase[]> => {
+    const token = await acquireToken();
+
+    if (searchAllForms) {
+      // First get word variations
+      const variations = await fetchWordVariations(searchQuery, token);
+      console.log("Word variations:", variations);
+
+      // Search Forvo for each variation
+      const forvoResultsArray = await Promise.all(
+        variations.map(async (variation) => {
+          const results = await searchForvoPhrase(variation, token);
+          return results;
+        })
+      );
+      console.log("Forvo results for all forms:", forvoResultsArray);
+
+      // Put the best (first) result of each variation at the front of the list,
+      // followed by the remaining results for each variation
+      const bestResults = forvoResultsArray.map((results) => results[0]).filter(Boolean);
+      const remainingResults = forvoResultsArray.flatMap((results) => results.slice(1));
+      const orderedResults = [...bestResults, ...remainingResults];
+
+      // Convert to Phrase objects with unique IDs, removing duplicates
+      const seenPhrases = new Set<string>();
+      let resultIndex = 0;
+      const resultsWithoutStress = orderedResults.map((forvoResult) => {
+        if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
+          seenPhrases.add(forvoResult.phrase);
+          return {
+            CardId: `forvo-${resultIndex++}`,
+            Phrase: forvoResult.phrase,
+            PhraseStress: forvoResult.phrase,
+            Audio: forvoResult.audio || "",
+            Translation: "",
+          };
+        }
+        return null;
+      });
+      return resultsWithoutStress.filter((result) => result !== null) as Phrase[];
+    }
+
+    // Single phrase search
+    const forvoResults = await searchForvoPhrase(searchQuery, token);
+    console.log("Forvo results:", forvoResults);
+
+    // Convert array of results to Phrase objects without stress marks
+    return forvoResults.map((forvoResult, index) => ({
+      CardId: `forvo-${index}`,
+      Phrase: forvoResult.phrase,
+      PhraseStress: forvoResult.phrase,
+      Audio: forvoResult.audio || "",
+      Translation: "",
+    }));
+  };
+
   const handleSearch = async () => {
     setIsSearching(true);
     setHasSearched(true);
     handleBackToSentence();
-    let allResults: Phrase[] = [];
 
     try {
-      const token = await acquireToken();
-      
-      if (searchAllForms) {
-        // First get word variations
-        const variations = await fetchWordVariations(searchQuery, token);
-        console.log("Word variations:", variations);
-        
-        // Search Forvo for each variation
-        const forvoResultsArray = await Promise.all(
-          variations.map(async (variation) => {
-            const results = await searchForvoPhrase(variation, token);
-            return results;
-          })
-        );
-        console.log("Forvo results for all forms:", forvoResultsArray);
+      let allResults = await performSearch();
 
-        // Put the best (first) result of each variation at the front of the list,
-        // followed by the remaining results for each variation
-        const bestResults = forvoResultsArray.map((results) => results[0]).filter(Boolean);
-        const remainingResults = forvoResultsArray.flatMap((results) => results.slice(1));
-        const orderedResults = [...bestResults, ...remainingResults];
-
-        // Convert to Phrase objects with unique IDs, removing duplicates
-        const seenPhrases = new Set<string>();
-        let resultIndex = 0;
-        const resultsWithoutStress = orderedResults.map((forvoResult) => {
-          if (forvoResult && !seenPhrases.has(forvoResult.phrase)) {
-            seenPhrases.add(forvoResult.phrase);
-            return {
-              CardId: `forvo-${resultIndex++}`,
-              Phrase: forvoResult.phrase,
-              PhraseStress: forvoResult.phrase,
-              Audio: forvoResult.audio || "",
-              Translation: "",
-            };
-          }
-          return null;
-        });
-        allResults = resultsWithoutStress.filter((result) => result !== null) as Phrase[];
-      } else {
-        // Single phrase search
-        const forvoResults = await searchForvoPhrase(searchQuery, token);
-        console.log("Forvo results:", forvoResults);
-        
-        // Convert array of results to Phrase objects without stress marks
-        allResults = forvoResults.map((forvoResult, index) => ({
-          CardId: `forvo-${index}`,
-          Phrase: forvoResult.phrase,
-          PhraseStress: forvoResult.phrase,
-          Audio: forvoResult.audio || "",
-          Translation: "",
-        }));
+      // The backend can occasionally return an empty result on the first
+      // attempt (e.g. a cold start or transient Forvo rate limit). Retry
+      // once after a short delay before reporting "no results".
+      if (allResults.length === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        allResults = await performSearch();
       }
 
       console.log("All results to set:", allResults);

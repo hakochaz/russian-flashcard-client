@@ -5,6 +5,7 @@ export default [
   { file: "routes/search.tsx", path: "/search" },
   { file: "routes/create.tsx", path: "/create" },
   { file: "routes/create-grammar.tsx", path: "/create-grammar" },
+  { file: "routes/combined-search.tsx", path: "/combined-search" },
   { file: "routes/forvo-search.tsx", path: "/forvo-search" },
   { file: "routes/forvo-word-search.tsx", path: "/forvo-word-search" },
   { file: "routes/shadowing.tsx", path: "/shadowing" },

@@ -23,6 +23,7 @@ function Navigation() {
     { to: "/search", label: "Sentences Search", icon: "🔍" },
     { to: "/create", label: "Create Sentences", icon: "✏️" },
     { to: "/create-grammar", label: "Create Grammar", icon: "📝" },
+    { to: "/combined-search", label: "Combined Search", icon: "🔎" },
     { to: "/forvo-search", label: "Forvo Sentence Search", icon: "🎙️" },
     { to: "/forvo-word-search", label: "Forvo Word Search", icon: "🔊" },
     { to: "/shadowing", label: "Shadowing", icon: "🗣️" },

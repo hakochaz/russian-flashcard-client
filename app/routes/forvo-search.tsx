@@ -58,8 +58,12 @@ export default function ForvoSearch() {
     const token = await acquireToken();
 
     if (searchAllForms) {
-      // First get word variations
-      const variations = await fetchWordVariations(searchQuery, token);
+      // First get word variations, always including the original query
+      const rawVariations = await fetchWordVariations(searchQuery, token);
+      const variations = rawVariations.length > 0 ? rawVariations : [searchQuery];
+      if (!variations.includes(searchQuery)) {
+        variations.unshift(searchQuery);
+      }
       console.log("Word variations:", variations);
 
       // Search Forvo for each variation

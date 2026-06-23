@@ -58,7 +58,11 @@ export default function CombinedSearch() {
     const token = await acquireToken();
 
     if (searchAllForms) {
-      const variations = await fetchWordVariations(searchQuery, token);
+      const rawVariations = await fetchWordVariations(searchQuery, token);
+      const variations = rawVariations.length > 0 ? rawVariations : [searchQuery];
+      if (!variations.includes(searchQuery)) {
+        variations.unshift(searchQuery);
+      }
 
       const [sentenceResultsArray, forvoResultsArray] = await Promise.all([
         Promise.all(variations.map((variation) => searchExamples(variation, token))),

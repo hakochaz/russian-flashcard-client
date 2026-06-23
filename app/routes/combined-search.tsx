@@ -59,7 +59,7 @@ export default function CombinedSearch() {
     const parts = query.split("/").map((p) => p.trim()).filter(Boolean);
     if (parts.length < 2) return [parts[0] || query.trim()];
 
-    const first = parts[0];
+    const first = parts[0].replace(/\s*\(.*$/, "");
     const second = parts[1];
 
     const dashIndex = second.indexOf("-");
@@ -68,7 +68,8 @@ export default function CombinedSearch() {
       return [first, prefix + first];
     }
 
-    return [first, second];
+    const cleanSecond = second.replace(/\s*\(.*$/, "");
+    return [first, cleanSecond];
   };
 
   const performSearch = async (): Promise<{ sentenceResults: Phrase[]; forvoResults: Phrase[] }> => {

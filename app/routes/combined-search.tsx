@@ -54,74 +54,68 @@ export default function CombinedSearch() {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [selectedWords.length, currentSelectedWordIndex, currentResultIndex, results.length]);
 
-  const performSearch = async (): Promise<{ sentenceResults: Phrase[]; forvoResults: Phrase[] }> => {
-    const token = await acquireToken();
+  const parseSearchTerms = (query: string): string[] => {
+    if (!query.includes("/")) return [query.trim()];
+    const parts = query.split("/").map((p) => p.trim()).filter(Boolean);
+    if (parts.length < 2) return [parts[0] || query.trim()];
 
-    if (searchAllForms) {
-      const rawVariations = await fetchWordVariations(searchQuery, token);
-      const variations = rawVariations.length > 0 ? rawVariations : [searchQuery];
-      if (!variations.includes(searchQuery)) {
-        variations.unshift(searchQuery);
-      }
+    const first = parts[0];
+    const second = parts[1];
 
-      const [sentenceResultsArray, forvoResultsArray] = await Promise.all([
-        Promise.all(variations.map((variation) => searchExamples(variation, token))),
-        Promise.all(variations.map((variation) => searchForvoPhrase(variation, token))),
-      ]);
-
-      // Deduplicate sentence results
-      const seenSentenceIds = new Set<string>();
-      const sentenceResults = sentenceResultsArray.flat().filter((phrase) => {
-        if (seenSentenceIds.has(phrase.CardId)) return false;
-        seenSentenceIds.add(phrase.CardId);
-        return true;
-      });
-
-      // Order Forvo results: best (first) of each variation first, then remaining
-      const bestForvo = forvoResultsArray.map((r) => r[0]).filter(Boolean);
-      const remainingForvo = forvoResultsArray.flatMap((r) => r.slice(1));
-      const orderedForvo = [...bestForvo, ...remainingForvo];
-
-      const seenForvoPhrases = new Set<string>();
-      // Also exclude any phrases already found in sentence results
-      for (const s of sentenceResults) {
-        seenForvoPhrases.add(s.Phrase);
-      }
-
-      let forvoIndex = 0;
-      const forvoResults = orderedForvo
-        .filter((r) => {
-          if (!r || seenForvoPhrases.has(r.phrase)) return false;
-          seenForvoPhrases.add(r.phrase);
-          return true;
-        })
-        .map((r) => ({
-          CardId: `forvo-${forvoIndex++}`,
-          Phrase: r.phrase,
-          PhraseStress: r.phrase,
-          Audio: r.audio || "",
-          Translation: "",
-        }));
-
-      return { sentenceResults, forvoResults };
+    const dashIndex = second.indexOf("-");
+    if (dashIndex !== -1) {
+      const prefix = second.slice(0, dashIndex);
+      return [first, prefix + first];
     }
 
-    // Single phrase search — run both in parallel
-    const [sentenceResults, forvoRaw] = await Promise.all([
-      searchExamples(searchQuery, token),
-      searchForvoPhrase(searchQuery, token),
+    return [first, second];
+  };
+
+  const performSearch = async (): Promise<{ sentenceResults: Phrase[]; forvoResults: Phrase[] }> => {
+    const token = await acquireToken();
+    const searchTerms = parseSearchTerms(searchQuery);
+
+    let allSearchKeys: string[];
+    if (searchAllForms) {
+      const variationsArrays = await Promise.all(
+        searchTerms.map(async (term) => {
+          const raw = await fetchWordVariations(term, token);
+          const v = raw.length > 0 ? raw : [term];
+          if (!v.includes(term)) v.unshift(term);
+          return v;
+        })
+      );
+      allSearchKeys = variationsArrays.flat();
+    } else {
+      allSearchKeys = searchTerms;
+    }
+
+    const [sentenceResultsArray, forvoResultsArray] = await Promise.all([
+      Promise.all(allSearchKeys.map((key) => searchExamples(key, token))),
+      Promise.all(allSearchKeys.map((key) => searchForvoPhrase(key, token))),
     ]);
 
-    const seenPhrases = new Set<string>();
+    const seenSentenceIds = new Set<string>();
+    const sentenceResults = sentenceResultsArray.flat().filter((phrase) => {
+      if (seenSentenceIds.has(phrase.CardId)) return false;
+      seenSentenceIds.add(phrase.CardId);
+      return true;
+    });
+
+    const bestForvo = forvoResultsArray.map((r) => r[0]).filter(Boolean);
+    const remainingForvo = forvoResultsArray.flatMap((r) => r.slice(1));
+    const orderedForvo = [...bestForvo, ...remainingForvo];
+
+    const seenForvoPhrases = new Set<string>();
     for (const s of sentenceResults) {
-      seenPhrases.add(s.Phrase);
+      seenForvoPhrases.add(s.Phrase);
     }
 
     let forvoIndex = 0;
-    const forvoResults = forvoRaw
+    const forvoResults = orderedForvo
       .filter((r) => {
-        if (seenPhrases.has(r.phrase)) return false;
-        seenPhrases.add(r.phrase);
+        if (!r || seenForvoPhrases.has(r.phrase)) return false;
+        seenForvoPhrases.add(r.phrase);
         return true;
       })
       .map((r) => ({

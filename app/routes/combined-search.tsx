@@ -1,7 +1,7 @@
 import type { Route } from "./+types/combined-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { searchExamples, searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, type Phrase, type WordData } from "../api/api";
+import { searchExamples, searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, fetchFirstWhiteRow, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -24,6 +24,7 @@ export default function CombinedSearch() {
   const [searchAllForms, setSearchAllForms] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importFading, setImportFading] = useState(false);
+  const [isLoadingWord, setIsLoadingWord] = useState(false);
   const { acquireToken } = useAuth();
 
   const handleImportSuccess = () => {
@@ -53,6 +54,19 @@ export default function CombinedSearch() {
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [selectedWords.length, currentSelectedWordIndex, currentResultIndex, results.length]);
+
+  const handleGetWord = async () => {
+    setIsLoadingWord(true);
+    try {
+      const token = await acquireToken();
+      const value = await fetchFirstWhiteRow(token);
+      if (value) setSearchQuery(value);
+    } catch (error) {
+      console.error("Failed to get word:", error);
+    } finally {
+      setIsLoadingWord(false);
+    }
+  };
 
   const parseSearchTerms = (query: string): string[] => {
     if (!query.includes("/")) return [query.trim()];
@@ -287,6 +301,9 @@ export default function CombinedSearch() {
           />
           <Button onClick={handleSearch} loading={isSearching}>
             Search
+          </Button>
+          <Button variant="light" onClick={handleGetWord} loading={isLoadingWord}>
+            Get Word
           </Button>
         </Group>
 

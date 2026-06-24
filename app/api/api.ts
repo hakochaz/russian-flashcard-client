@@ -708,6 +708,31 @@ export async function generateWordImage(
   }
 }
 
+export async function fetchFirstWhiteRow(bearerToken?: string): Promise<string | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/sheets/first-white-row`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers,
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data.value || null;
+  } catch (error) {
+    console.error("Failed to fetch first white row:", error);
+    return null;
+  }
+}
+
 export type {
   Phrase,
   WordData,

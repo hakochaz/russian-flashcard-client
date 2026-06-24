@@ -1,7 +1,7 @@
 import type { Route } from "./+types/combined-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { searchExamples, searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, fetchFirstWhiteRow, type Phrase, type WordData } from "../api/api";
+import { searchExamples, searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, fetchFirstWhiteRow, highlightSheetWord, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -24,14 +24,22 @@ export default function CombinedSearch() {
   const [searchAllForms, setSearchAllForms] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importFading, setImportFading] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deleteFading, setDeleteFading] = useState(false);
   const [isLoadingWord, setIsLoadingWord] = useState(false);
   const { acquireToken } = useAuth();
 
-  const handleImportSuccess = () => {
+  const handleImportSuccess = (deleted?: boolean) => {
     setImportSuccess(true);
     setImportFading(false);
     setTimeout(() => setImportFading(true), 2000);
     setTimeout(() => setImportSuccess(false), 4000);
+    if (deleted) {
+      setDeleteSuccess(true);
+      setDeleteFading(false);
+      setTimeout(() => setDeleteFading(true), 2000);
+      setTimeout(() => setDeleteSuccess(false), 4000);
+    }
   };
 
   useEffect(() => {
@@ -59,6 +67,9 @@ export default function CombinedSearch() {
     setIsLoadingWord(true);
     try {
       const token = await acquireToken();
+      if (searchQuery.trim()) {
+        await highlightSheetWord(searchQuery.trim(), token);
+      }
       const value = await fetchFirstWhiteRow(token);
       if (value) setSearchQuery(value);
     } catch (error) {
@@ -278,6 +289,11 @@ export default function CombinedSearch() {
         {importSuccess && (
           <Alert color="teal" style={{ position: "fixed", top: 72, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: importFading ? 0 : 1 }}>
             Imported successfully!
+          </Alert>
+        )}
+        {deleteSuccess && (
+          <Alert color="teal" style={{ position: "fixed", top: 124, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: deleteFading ? 0 : 1 }}>
+            Delete successful!
           </Alert>
         )}
         <div>

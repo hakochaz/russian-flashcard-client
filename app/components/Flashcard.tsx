@@ -1,6 +1,6 @@
 import { Button, Paper, Group, Stack, CopyButton, ActionIcon, Tooltip, Text, TextInput, Alert, Modal, Image } from "@mantine/core";
 import type { Phrase, WordData } from "../api/api";
-import { streamForvoBase64, generateWordImage, generateImageFromPrompt } from "../api/api";
+import { streamForvoBase64, generateWordImage, generateImageFromPrompt, deleteSheetRow } from "../api/api";
 import { GoogleImageSearch } from "./GoogleImageSearch";
 import { useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
@@ -12,7 +12,7 @@ interface FlashcardProps {
   wordData: WordData | null;
   isLoading: boolean;
   onBack: () => void;
-  onImportSuccess?: () => void;
+  onImportSuccess?: (deleteSuccess?: boolean) => void;
   onImportDismiss?: () => void;
   isForvoAudio?: boolean;
   imageUrl?: string;
@@ -519,7 +519,12 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                 const noteData = await noteRes.json();
                 if (noteData.error) throw new Error(`addNote error: ${noteData.error}`);
 
-                onImportSuccess?.();
+                let deleteSuccess = false;
+                if (wordData?.baseForm) {
+                  const token = await acquireToken();
+                  deleteSuccess = await deleteSheetRow(wordData.baseForm, token);
+                }
+                onImportSuccess?.(deleteSuccess);
                 (onImportDismiss ?? onBack)();
               } catch {
                 setImportError(true);

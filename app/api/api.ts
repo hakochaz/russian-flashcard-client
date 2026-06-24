@@ -708,6 +708,41 @@ export async function generateWordImage(
   }
 }
 
+export async function deleteSheetRow(text: string, bearerToken?: string): Promise<boolean> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/sheets/row?text=${encodeURIComponent(text)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      mode: 'cors',
+      headers,
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error("Failed to delete sheet row:", error);
+    return false;
+  }
+}
+
+export async function highlightSheetWord(text: string, bearerToken?: string): Promise<void> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/sheets/highlight?text=${encodeURIComponent(text)}`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    await fetch(url, {
+      method: 'PUT',
+      mode: 'cors',
+      headers,
+    });
+  } catch (error) {
+    console.error("Failed to highlight word:", error);
+  }
+}
+
 export async function fetchFirstWhiteRow(bearerToken?: string): Promise<string | null> {
   try {
     const url = `${apiBaseUrl.replace(/\/$/, "")}/api/sheets/first-white-row`;

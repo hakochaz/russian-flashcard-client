@@ -1,7 +1,7 @@
 import type { Route } from "./+types/create";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { fetchWordData, synthesizeSentenceAudio, getStressedSentence, type Phrase, type WordData } from "../api/api";
+import { fetchWordData, synthesizeSentenceAudio, getStressedSentence, generateSentence, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -11,6 +11,8 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Create() {
+  const [wordInput, setWordInput] = useState("");
+  const [generatingWord, setGeneratingWord] = useState(false);
   const [input, setInput] = useState("");
   const [currentPhrase, setCurrentPhrase] = useState<Phrase | null>(null);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
@@ -19,14 +21,22 @@ export default function Create() {
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importFading, setImportFading] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [deleteFading, setDeleteFading] = useState(false);
 
   const { acquireToken } = useAuth();
 
-  const handleImportSuccess = () => {
+  const handleImportSuccess = (deleted?: boolean) => {
     setImportSuccess(true);
     setImportFading(false);
     setTimeout(() => setImportFading(true), 2000);
     setTimeout(() => setImportSuccess(false), 4000);
+    if (deleted) {
+      setDeleteSuccess(true);
+      setDeleteFading(false);
+      setTimeout(() => setDeleteFading(true), 2000);
+      setTimeout(() => setDeleteSuccess(false), 4000);
+    }
   };
 
   // Handle keyboard navigation with arrow keys
@@ -44,6 +54,22 @@ export default function Create() {
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [selectedWords.length, currentSelectedWordIndex]);
+
+  const handleGenerate = async () => {
+    if (!wordInput.trim()) return;
+    setGeneratingWord(true);
+    try {
+      const token = await acquireToken();
+      const result = await generateSentence(wordInput.trim(), token);
+      if (result?.sentence) {
+        setInput(result.sentence);
+      }
+    } catch (error) {
+      console.error("Failed to generate sentence:", error);
+    } finally {
+      setGeneratingWord(false);
+    }
+  };
 
   const handleUseInput = () => {
     const phrase: Phrase = {
@@ -148,11 +174,29 @@ export default function Create() {
             Imported successfully!
           </Alert>
         )}
+        {deleteSuccess && (
+          <Alert color="teal" style={{ position: "fixed", top: 124, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: deleteFading ? 0 : 1 }}>
+            Delete successful!
+          </Alert>
+        )}
         <div>
           <Title order={2}>Create Sentence Cards</Title>
           <Text mt="sm" c="dimmed">
             Enter a sentence and select words to create flashcards
           </Text>
+
+          <Group mt="md" align="center">
+            <TextInput
+              placeholder="Enter word"
+              value={wordInput}
+              onChange={(e) => setWordInput(e.currentTarget.value)}
+              size="md"
+              style={{ maxWidth: 400 }}
+            />
+            <Button onClick={handleGenerate} variant="light" size="sm" ml="sm" loading={generatingWord}>
+              Generate
+            </Button>
+          </Group>
 
           <Group mt="md" align="center">
             <TextInput

@@ -708,6 +708,34 @@ export async function generateWordImage(
   }
 }
 
+export async function generateSentence(word: string, bearerToken?: string): Promise<{ word: string; sentence: string } | null> {
+  try {
+    const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/generate-sentence`;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+    const cleanWord = word.split(" ")[0];
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers,
+      body: JSON.stringify({ word: cleanWord }),
+    });
+
+    if (!response.ok) {
+      console.error(`API error: ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Failed to generate sentence:", error);
+    return null;
+  }
+}
+
 export async function deleteSheetRow(text: string, bearerToken?: string): Promise<boolean> {
   try {
     const url = `${apiBaseUrl.replace(/\/$/, "")}/api/sheets/row?text=${encodeURIComponent(text)}`;

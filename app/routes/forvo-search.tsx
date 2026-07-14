@@ -1,7 +1,7 @@
 import type { Route } from "./+types/forvo-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, fetchFirstWhiteRow, type Phrase, type WordData } from "../api/api";
+import { searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, fetchFirstWhiteRow, markOrangeWord, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -21,9 +21,13 @@ export default function ForvoSearch() {
   const [currentSelectedWordIndex, setCurrentSelectedWordIndex] = useState(0);
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
   const [searchAllForms, setSearchAllForms] = useState(false);
+  const [autoSearch, setAutoSearch] = useState(true);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importFading, setImportFading] = useState(false);
   const [isLoadingWord, setIsLoadingWord] = useState(false);
+  const [isMarkingWord, setIsMarkingWord] = useState(false);
+  const [markWordSuccess, setMarkWordSuccess] = useState(false);
+  const [markWordFading, setMarkWordFading] = useState(false);
   const { acquireToken } = useAuth();
 
   const handleImportSuccess = () => {
@@ -60,7 +64,12 @@ export default function ForvoSearch() {
     try {
       const token = await acquireToken();
       const value = await fetchFirstWhiteRow(token);
-      if (value) setSearchQuery(value);
+      if (value) {
+        setSearchQuery(value);
+        if (autoSearch) {
+          handleSearch(value);
+        }
+      }
     } catch (error) {
       console.error("Failed to get word:", error);
     } finally {
@@ -68,15 +77,35 @@ export default function ForvoSearch() {
     }
   };
 
-  const performSearch = async (): Promise<Phrase[]> => {
+  const handleMarkWord = async () => {
+    if (!searchQuery.trim()) return;
+    setIsMarkingWord(true);
+    try {
+      const token = await acquireToken();
+      const success = await markOrangeWord(searchQuery.trim(), token);
+      if (success) {
+        setMarkWordSuccess(true);
+        setMarkWordFading(false);
+        setTimeout(() => setMarkWordFading(true), 2000);
+        setTimeout(() => setMarkWordSuccess(false), 4000);
+      }
+    } catch (error) {
+      console.error("Failed to mark word:", error);
+    } finally {
+      setIsMarkingWord(false);
+    }
+  };
+
+  const performSearch = async (queryOverride?: string): Promise<Phrase[]> => {
     const token = await acquireToken();
+    const query = queryOverride ?? searchQuery;
 
     if (searchAllForms) {
       // First get word variations, always including the original query
-      const rawVariations = await fetchWordVariations(searchQuery, token);
-      const variations = rawVariations.length > 0 ? rawVariations : [searchQuery];
-      if (!variations.includes(searchQuery)) {
-        variations.unshift(searchQuery);
+      const rawVariations = await fetchWordVariations(query, token);
+      const variations = rawVariations.length > 0 ? rawVariations : [query];
+      if (!variations.includes(query)) {
+        variations.unshift(query);
       }
       console.log("Word variations:", variations);
 
@@ -115,7 +144,7 @@ export default function ForvoSearch() {
     }
 
     // Single phrase search
-    const forvoResults = await searchForvoPhrase(searchQuery, token);
+    const forvoResults = await searchForvoPhrase(query, token);
     console.log("Forvo results:", forvoResults);
 
     // Convert array of results to Phrase objects without stress marks
@@ -128,20 +157,20 @@ export default function ForvoSearch() {
     }));
   };
 
-  const handleSearch = async () => {
+  const handleSearch = async (queryOverride?: string) => {
     setIsSearching(true);
     setHasSearched(true);
     handleBackToSentence();
 
     try {
-      let allResults = await performSearch();
+      let allResults = await performSearch(queryOverride);
 
       // The backend can occasionally return an empty result on the first
       // attempt (e.g. a cold start or transient Forvo rate limit). Retry
       // once after a short delay before reporting "no results".
       if (allResults.length === 0) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        allResults = await performSearch();
+        allResults = await performSearch(queryOverride);
       }
 
       console.log("All results to set:", allResults);
@@ -251,6 +280,11 @@ export default function ForvoSearch() {
             Imported successfully!
           </Alert>
         )}
+        {markWordSuccess && (
+          <Alert color="teal" style={{ position: "fixed", top: 124, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: markWordFading ? 0 : 1 }}>
+            Word successfully marked
+          </Alert>
+        )}
         <div>
           <Title order={2}>Forvo Sentence Search</Title>
           <Text mt="sm" c="dimmed">
@@ -270,19 +304,29 @@ export default function ForvoSearch() {
             }}
             style={{ flex: 1 }}
           />
-          <Button onClick={handleSearch} loading={isSearching}>
+          <Button onClick={() => handleSearch()} loading={isSearching}>
             Search
           </Button>
           <Button variant="light" onClick={handleGetWord} loading={isLoadingWord}>
             Get Word
           </Button>
+          <Button variant="light" onClick={handleMarkWord} loading={isMarkingWord}>
+            Mark Word
+          </Button>
         </Group>
 
-        <Checkbox
-          label="Search all word forms"
-          checked={searchAllForms}
-          onChange={(e) => setSearchAllForms(e.currentTarget.checked)}
-        />
+        <Group gap="lg">
+          <Checkbox
+            label="Search all word forms"
+            checked={searchAllForms}
+            onChange={(e) => setSearchAllForms(e.currentTarget.checked)}
+          />
+          <Checkbox
+            label="Autosearch"
+            checked={autoSearch}
+            onChange={(e) => setAutoSearch(e.currentTarget.checked)}
+          />
+        </Group>
 
         {hasSearched && !isSearching && results.length === 0 && (
           <Paper p="lg" radius="md" withBorder>

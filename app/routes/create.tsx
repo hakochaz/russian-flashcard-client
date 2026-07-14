@@ -1,7 +1,7 @@
 import type { Route } from "./+types/create";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { fetchWordData, synthesizeSentenceAudio, getStressedSentence, generateSentence, type Phrase, type WordData } from "../api/api";
+import { fetchWordData, synthesizeSentenceAudio, getStressedSentence, generateSentence, fetchFirstOrangeRow, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -13,6 +13,7 @@ export function meta({}: Route.MetaArgs) {
 export default function Create() {
   const [wordInput, setWordInput] = useState("");
   const [generatingWord, setGeneratingWord] = useState(false);
+  const [loadingWord, setLoadingWord] = useState(false);
   const [input, setInput] = useState("");
   const [currentPhrase, setCurrentPhrase] = useState<Phrase | null>(null);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
@@ -68,6 +69,19 @@ export default function Create() {
       console.error("Failed to generate sentence:", error);
     } finally {
       setGeneratingWord(false);
+    }
+  };
+
+  const handleGetWord = async () => {
+    setLoadingWord(true);
+    try {
+      const token = await acquireToken();
+      const value = await fetchFirstOrangeRow(token);
+      if (value) setWordInput(value);
+    } catch (error) {
+      console.error("Failed to get word:", error);
+    } finally {
+      setLoadingWord(false);
     }
   };
 
@@ -195,6 +209,9 @@ export default function Create() {
             />
             <Button onClick={handleGenerate} variant="light" size="sm" ml="sm" loading={generatingWord}>
               Generate
+            </Button>
+            <Button onClick={handleGetWord} variant="light" size="sm" loading={loadingWord}>
+              Get Word
             </Button>
           </Group>
 

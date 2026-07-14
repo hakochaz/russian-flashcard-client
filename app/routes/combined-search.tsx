@@ -1,7 +1,7 @@
 import type { Route } from "./+types/combined-search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { searchExamples, searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, fetchFirstWhiteRow, highlightSheetWord, type Phrase, type WordData } from "../api/api";
+import { searchExamples, searchForvoPhrase, fetchWordData, fetchWordVariations, getStressedSentence, fetchFirstWhiteRow, highlightSheetWord, markOrangeWord, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -22,11 +22,15 @@ export default function CombinedSearch() {
   const [currentSelectedWordIndex, setCurrentSelectedWordIndex] = useState(0);
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
   const [searchAllForms, setSearchAllForms] = useState(false);
+  const [autoSearch, setAutoSearch] = useState(true);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importFading, setImportFading] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [deleteFading, setDeleteFading] = useState(false);
   const [isLoadingWord, setIsLoadingWord] = useState(false);
+  const [isMarkingWord, setIsMarkingWord] = useState(false);
+  const [markWordSuccess, setMarkWordSuccess] = useState(false);
+  const [markWordFading, setMarkWordFading] = useState(false);
   const { acquireToken } = useAuth();
 
   const handleImportSuccess = (deleted?: boolean) => {
@@ -71,11 +75,35 @@ export default function CombinedSearch() {
         await highlightSheetWord(searchQuery.trim(), token);
       }
       const value = await fetchFirstWhiteRow(token);
-      if (value) setSearchQuery(value);
+      if (value) {
+        setSearchQuery(value);
+        if (autoSearch) {
+          handleSearch(value);
+        }
+      }
     } catch (error) {
       console.error("Failed to get word:", error);
     } finally {
       setIsLoadingWord(false);
+    }
+  };
+
+  const handleMarkWord = async () => {
+    if (!searchQuery.trim()) return;
+    setIsMarkingWord(true);
+    try {
+      const token = await acquireToken();
+      const success = await markOrangeWord(searchQuery.trim(), token);
+      if (success) {
+        setMarkWordSuccess(true);
+        setMarkWordFading(false);
+        setTimeout(() => setMarkWordFading(true), 2000);
+        setTimeout(() => setMarkWordSuccess(false), 4000);
+      }
+    } catch (error) {
+      console.error("Failed to mark word:", error);
+    } finally {
+      setIsMarkingWord(false);
     }
   };
 
@@ -97,9 +125,9 @@ export default function CombinedSearch() {
     return [first, cleanSecond];
   };
 
-  const performSearch = async (): Promise<{ sentenceResults: Phrase[]; forvoResults: Phrase[] }> => {
+  const performSearch = async (queryOverride?: string): Promise<{ sentenceResults: Phrase[]; forvoResults: Phrase[] }> => {
     const token = await acquireToken();
-    const searchTerms = parseSearchTerms(searchQuery);
+    const searchTerms = parseSearchTerms(queryOverride ?? searchQuery);
 
     let allSearchKeys: string[];
     if (searchAllForms) {
@@ -155,18 +183,18 @@ export default function CombinedSearch() {
     return { sentenceResults, forvoResults };
   };
 
-  const handleSearch = async () => {
+  const handleSearch = async (queryOverride?: string) => {
     setIsSearching(true);
     setHasSearched(true);
     handleBackToSentence();
 
     try {
-      let { sentenceResults, forvoResults } = await performSearch();
+      let { sentenceResults, forvoResults } = await performSearch(queryOverride);
 
       // Retry once if both empty
       if (sentenceResults.length === 0 && forvoResults.length === 0) {
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        ({ sentenceResults, forvoResults } = await performSearch());
+        ({ sentenceResults, forvoResults } = await performSearch(queryOverride));
       }
 
       const combined = [...sentenceResults, ...forvoResults];
@@ -296,6 +324,11 @@ export default function CombinedSearch() {
             Delete successful!
           </Alert>
         )}
+        {markWordSuccess && (
+          <Alert color="teal" style={{ position: "fixed", top: 176, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: markWordFading ? 0 : 1 }}>
+            Word successfully marked
+          </Alert>
+        )}
         <div>
           <Title order={2}>Combined Search</Title>
           <Text mt="sm" c="dimmed">
@@ -315,19 +348,29 @@ export default function CombinedSearch() {
             }}
             style={{ flex: 1 }}
           />
-          <Button onClick={handleSearch} loading={isSearching}>
+          <Button onClick={() => handleSearch()} loading={isSearching}>
             Search
           </Button>
           <Button variant="light" onClick={handleGetWord} loading={isLoadingWord}>
             Get Word
           </Button>
+          <Button variant="light" onClick={handleMarkWord} loading={isMarkingWord}>
+            Mark Word
+          </Button>
         </Group>
 
-        <Checkbox
-          label="Search all word forms"
-          checked={searchAllForms}
-          onChange={(e) => setSearchAllForms(e.currentTarget.checked)}
-        />
+        <Group gap="lg">
+          <Checkbox
+            label="Search all word forms"
+            checked={searchAllForms}
+            onChange={(e) => setSearchAllForms(e.currentTarget.checked)}
+          />
+          <Checkbox
+            label="Autosearch"
+            checked={autoSearch}
+            onChange={(e) => setAutoSearch(e.currentTarget.checked)}
+          />
+        </Group>
 
         {hasSearched && !isSearching && results.length === 0 && (
           <Paper p="lg" radius="md" withBorder>

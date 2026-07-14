@@ -1,7 +1,7 @@
 import type { Route } from "./+types/search";
 import { Container, Title, Text, Button, Paper, Group, Stack, TextInput, Checkbox, Alert } from "@mantine/core";
 import { useState, useEffect } from "react";
-import { fetchWordData, searchExamples, fetchWordVariations, fetchFirstWhiteRow, highlightSheetWord, type Phrase, type WordData } from "../api/api";
+import { fetchWordData, searchExamples, fetchWordVariations, fetchFirstWhiteRow, highlightSheetWord, markOrangeWord, type Phrase, type WordData } from "../api/api";
 import { useAuth } from "../auth/AuthProvider";
 import { Flashcard } from "../components/Flashcard";
 import { SentenceCard } from "../components/SentenceCard";
@@ -21,11 +21,15 @@ export default function Search() {
   const [currentSelectedWordIndex, setCurrentSelectedWordIndex] = useState(0);
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
   const [searchAllForms, setSearchAllForms] = useState(false);
+  const [autoSearch, setAutoSearch] = useState(true);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importFading, setImportFading] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [deleteFading, setDeleteFading] = useState(false);
   const [isLoadingWord, setIsLoadingWord] = useState(false);
+  const [isMarkingWord, setIsMarkingWord] = useState(false);
+  const [markWordSuccess, setMarkWordSuccess] = useState(false);
+  const [markWordFading, setMarkWordFading] = useState(false);
   const { acquireToken } = useAuth();
 
   const handleImportSuccess = (deleted?: boolean) => {
@@ -71,7 +75,12 @@ export default function Search() {
         await highlightSheetWord(searchQuery.trim(), token);
       }
       const value = await fetchFirstWhiteRow(token);
-      if (value) setSearchQuery(value);
+      if (value) {
+        setSearchQuery(value);
+        if (autoSearch) {
+          handleSearch(value);
+        }
+      }
     } catch (error) {
       console.error("Failed to get word:", error);
     } finally {
@@ -79,7 +88,27 @@ export default function Search() {
     }
   };
 
-  const handleSearch = async () => {
+  const handleMarkWord = async () => {
+    if (!searchQuery.trim()) return;
+    setIsMarkingWord(true);
+    try {
+      const token = await acquireToken();
+      const success = await markOrangeWord(searchQuery.trim(), token);
+      if (success) {
+        setMarkWordSuccess(true);
+        setMarkWordFading(false);
+        setTimeout(() => setMarkWordFading(true), 2000);
+        setTimeout(() => setMarkWordSuccess(false), 4000);
+      }
+    } catch (error) {
+      console.error("Failed to mark word:", error);
+    } finally {
+      setIsMarkingWord(false);
+    }
+  };
+
+  const handleSearch = async (queryOverride?: string) => {
+    const query = queryOverride ?? searchQuery;
     setIsSearching(true);
     setHasSearched(true);
     handleBackToSentence();
@@ -90,7 +119,7 @@ export default function Search() {
         // Fetch word variations and search them (try with token, fall back without)
         try {
           const token = await acquireToken();
-          const variations = await fetchWordVariations(searchQuery, token);
+          const variations = await fetchWordVariations(query, token);
 
           const resultsArray = await Promise.all(
             variations.map((variation) => searchExamples(variation, token))
@@ -106,7 +135,7 @@ export default function Search() {
             });
         } catch (err) {
           console.debug("Could not acquire token for variations search, falling back:", err);
-          const variations = await fetchWordVariations(searchQuery);
+          const variations = await fetchWordVariations(query);
           const resultsArray = await Promise.all(
             variations.map((v) => searchExamples(v))
           );
@@ -122,10 +151,10 @@ export default function Search() {
       } else {
         try {
           const token = await acquireToken();
-          allResults = await searchExamples(searchQuery, token);
+          allResults = await searchExamples(query, token);
         } catch (err) {
           console.debug("Could not acquire token for search", err);
-          allResults = await searchExamples(searchQuery);
+          allResults = await searchExamples(query);
         }
       }
 
@@ -234,6 +263,11 @@ export default function Search() {
             Delete successful!
           </Alert>
         )}
+        {markWordSuccess && (
+          <Alert color="teal" style={{ position: "fixed", top: 176, right: 20, width: 280, zIndex: 9999, transition: "opacity 2s ease", opacity: markWordFading ? 0 : 1 }}>
+            Word successfully marked
+          </Alert>
+        )}
         <div>
           <Title order={2}>Sentences Search</Title>
           <Text mt="sm" c="dimmed">
@@ -253,19 +287,29 @@ export default function Search() {
             }}
             style={{ flex: 1 }}
           />
-          <Button onClick={handleSearch} loading={isSearching}>
+          <Button onClick={() => handleSearch()} loading={isSearching}>
             Search
           </Button>
           <Button variant="light" onClick={handleGetWord} loading={isLoadingWord}>
             Get Word
           </Button>
+          <Button variant="light" onClick={handleMarkWord} loading={isMarkingWord}>
+            Mark Word
+          </Button>
         </Group>
 
-        <Checkbox
-          label="Search all word forms"
-          checked={searchAllForms}
-          onChange={(e) => setSearchAllForms(e.currentTarget.checked)}
-        />
+        <Group gap="lg">
+          <Checkbox
+            label="Search all word forms"
+            checked={searchAllForms}
+            onChange={(e) => setSearchAllForms(e.currentTarget.checked)}
+          />
+          <Checkbox
+            label="Autosearch"
+            checked={autoSearch}
+            onChange={(e) => setAutoSearch(e.currentTarget.checked)}
+          />
+        </Group>
 
         {hasSearched && !isSearching && results.length === 0 && (
           <Paper p="lg" radius="md" withBorder>

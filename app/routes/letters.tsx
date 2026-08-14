@@ -147,7 +147,7 @@ export default function Letters() {
           </Paper>
         ) : (
           <>
-            <Paper p="xl" radius="md" withBorder bg="blue.0">
+            <Paper p="xl" radius="md" withBorder bg="var(--mantine-color-blue-light)">
               <Text size="xl" fw={600} ta="center" style={{ lineHeight: 1.6 }}>
                 {currentLetter}
               </Text>
@@ -162,7 +162,7 @@ export default function Letters() {
               <Stack gap="sm">
                 {pronunciations.length > 0 ? (
                   pronunciations.map((pronunciation: Pronunciation, index: number) => (
-                    <Paper key={index} p="md" radius="md" withBorder bg="gray.0">
+                    <Paper key={index} p="md" radius="md" withBorder bg="var(--mantine-color-default-hover)">
                       <Group gap="xl" align="center" wrap="nowrap">
                         <ActionIcon
                           size="xl"

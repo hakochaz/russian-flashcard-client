@@ -3,7 +3,7 @@ import { isRouteErrorResponse, Outlet, Link, ScrollRestoration, Meta, Links, Scr
 // Import styles of packages that you've installed.
 // All packages except `@mantine/hooks` require styles imports
 import '@mantine/core/styles.css';
-import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text, createTheme, Button } from '@mantine/core';
+import { ColorSchemeScript, MantineProvider, mantineHtmlProps, Text, createTheme, Button, ActionIcon, useMantineColorScheme, useComputedColorScheme, Tooltip } from '@mantine/core';
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -13,6 +13,26 @@ const theme = createTheme({
   primaryColor: 'blue',
   defaultRadius: 'md',
 });
+
+function ColorSchemeToggle() {
+  const { setColorScheme } = useMantineColorScheme();
+  const computedColorScheme = useComputedColorScheme('light');
+  const isDark = computedColorScheme === 'dark';
+
+  return (
+    <Tooltip label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+      <ActionIcon
+        onClick={() => setColorScheme(isDark ? 'light' : 'dark')}
+        variant="default"
+        size="lg"
+        radius="md"
+        aria-label="Toggle color scheme"
+      >
+        <span className="text-lg leading-none">{isDark ? '☀️' : '🌙'}</span>
+      </ActionIcon>
+    </Tooltip>
+  );
+}
 
 function Navigation() {
   const location = useLocation();
@@ -50,8 +70,8 @@ function Navigation() {
               to={to}
               className={`px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-200 group ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700 font-medium shadow-sm'
-                  : 'text-gray-700 hover:bg-gray-50 hover:translate-x-0.5'
+                  ? 'bg-blue-50 text-blue-700 font-medium shadow-sm dark:bg-blue-950 dark:text-blue-300'
+                  : 'text-gray-700 hover:bg-gray-50 hover:translate-x-0.5 dark:text-gray-300 dark:hover:bg-gray-800'
               }`}
             >
               <span className="text-lg">{icon}</span>
@@ -62,7 +82,7 @@ function Navigation() {
       </nav>
       
       {/* Logout section at bottom */}
-      <div className="mt-auto pt-4 border-t border-gray-200">
+      <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800">
         {account && (
           <div className="px-3 py-2 mb-3">
             <Text size="xs" c="dimmed" className="truncate">
@@ -89,18 +109,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const isClient = typeof document !== "undefined";
 
   const layout = (
-    <MantineProvider theme={theme}>
-      <div className="flex min-h-screen bg-gray-50">
+    <MantineProvider theme={theme} defaultColorScheme="auto">
+      <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm flex flex-col h-screen sticky top-0">
-          <div className="p-6 border-b border-gray-100">
+        <aside className="w-64 bg-white border-r border-gray-200 shadow-sm flex flex-col h-screen sticky top-0 dark:bg-gray-900 dark:border-gray-800">
+          <div className="p-6 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white text-xl shadow-md">
                 🇷🇺
               </div>
               <div>
-                <Text className="font-bold text-gray-900 text-lg leading-tight">Russian</Text>
-                <Text className="text-xs text-gray-500">Flashcards</Text>
+                <Text className="font-bold text-gray-900 text-lg leading-tight dark:text-white">Russian</Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400">Flashcards</Text>
               </div>
             </div>
           </div>
@@ -108,13 +128,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <Navigation />
           </div>
         </aside>
-        
+
         {/* Main content */}
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-            <div className="px-8 py-4">
-              <Text className="text-sm text-gray-600">Welcome back! 👋</Text>
+          <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10 dark:bg-gray-900 dark:border-gray-800">
+            <div className="px-8 py-4 flex items-center justify-between">
+              <Text className="text-sm text-gray-600 dark:text-gray-400">Welcome back! 👋</Text>
+              <ColorSchemeToggle />
             </div>
           </header>
           
@@ -137,7 +158,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <head>
           <meta charSet="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <ColorSchemeScript />
+          <ColorSchemeScript defaultColorScheme="auto" />
           <Meta />
           <Links />
           <script async src="https://cse.google.com/cse.js?cx=f1a874e493dc94593"></script>

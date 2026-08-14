@@ -189,7 +189,7 @@ export default function AllSentences() {
   return (
     <div>
       <div className="mb-8">
-        <Title order={1} className="text-3xl font-bold text-gray-900 mb-2">
+        <Title order={1} className="text-3xl font-bold text-gray-900 mb-2 dark:text-white">
           All Sentences
         </Title>
         <Text c="dimmed" size="lg">
@@ -203,7 +203,7 @@ export default function AllSentences() {
             Imported successfully!
           </Alert>
         )}
-        <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">
+        <Paper p="md" className="border border-gray-200 shadow-sm dark:border-gray-700" radius="lg">
           <Group justify="space-between" align="center">
             <Text size="sm" c="dimmed" className="flex items-center gap-2">
               <span>📊</span>
@@ -240,13 +240,13 @@ export default function AllSentences() {
         </Paper>
 
         {phraseLoading ? (
-          <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
+          <Paper p="xl" radius="lg" shadow="sm" className="border border-gray-100 dark:border-gray-800">
             <div className="flex items-center justify-center py-12">
               <Text c="dimmed">Loading card...</Text>
             </div>
           </Paper>
         ) : error ? (
-          <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-red-100">
+          <Paper p="xl" radius="lg" shadow="sm" className="border border-red-100 dark:border-red-900">
             <div className="flex items-center justify-center py-12">
               <Text c="red" fw={500}>{error}</Text>
             </div>
@@ -256,7 +256,7 @@ export default function AllSentences() {
             {selectedWords.length > 0 ? (
               <>
                 {creatingFlashcards ? (
-                  <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
+                  <Paper p="xl" radius="lg" shadow="sm" className="border border-gray-100 dark:border-gray-800">
                     <div className="flex items-center justify-center py-12">
                       <Text c="dimmed">Creating flashcards...</Text>
                     </div>
@@ -274,7 +274,7 @@ export default function AllSentences() {
                       onImportDismiss={handleDismissCurrentCard}
                     />
 
-                    <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">
+                    <Paper p="md" className="border border-gray-200 shadow-sm dark:border-gray-700" radius="lg">
                       <Group justify="space-between">
                         <Button
                           variant="light"
@@ -285,8 +285,8 @@ export default function AllSentences() {
                         >
                           Previous Word
                         </Button>
-                        <div className="px-4 py-2 bg-blue-50 rounded-full">
-                          <Text size="sm" fw={600} c="blue.7">
+                        <div className="px-4 py-2 rounded-full" style={{ background: "var(--mantine-color-blue-light)" }}>
+                          <Text size="sm" fw={600} style={{ color: "var(--mantine-color-blue-light-color)" }}>
                             {currentSelectedWordIndex + 1} / {selectedWords.length}
                           </Text>
                         </div>
@@ -313,7 +313,7 @@ export default function AllSentences() {
             )}
 
             {selectedWords.length === 0 && (
-              <Paper p="md" className="bg-white border border-gray-200 shadow-sm" radius="lg">
+              <Paper p="md" className="border border-gray-200 shadow-sm dark:border-gray-700" radius="lg">
                 <Group justify="space-between">
                   <Button
                     variant="light"
@@ -324,8 +324,8 @@ export default function AllSentences() {
                   >
                     Previous
                   </Button>
-                  <div className="px-4 py-2 bg-gray-100 rounded-full">
-                    <Text size="sm" fw={600} c="gray.7">
+                  <div className="px-4 py-2 rounded-full" style={{ background: "var(--mantine-color-default-hover)" }}>
+                    <Text size="sm" fw={600}>
                       Card {currentCardId} {totalCards !== null ? `/ ${totalCards}` : ""}
                     </Text>
                   </div>

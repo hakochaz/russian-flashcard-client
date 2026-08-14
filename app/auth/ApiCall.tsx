@@ -28,7 +28,7 @@ export const ApiCall: React.FC = () => {
         Call API
       </button>
       {result && (
-        <pre className="mt-2 p-2 border bg-gray-50 max-w-xl overflow-auto">{result}</pre>
+        <pre className="mt-2 p-2 border bg-gray-50 max-w-xl overflow-auto dark:bg-gray-800 dark:border-gray-700">{result}</pre>
       )}
     </div>
   );

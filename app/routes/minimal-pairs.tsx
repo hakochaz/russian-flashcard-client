@@ -255,7 +255,7 @@ export default function MinimalPairs() {
     return (
       <Stack gap="sm">
         {pronunciations.map((pronunciation: Pronunciation, index: number) => (
-          <Paper key={index} p="md" radius="md" withBorder bg="gray.0">
+          <Paper key={index} p="md" radius="md" withBorder bg="var(--mantine-color-default-hover)">
             <Group gap="xl" align="center" wrap="nowrap">
               <ActionIcon
                 size="xl"
@@ -333,7 +333,7 @@ export default function MinimalPairs() {
 
                 return (
                   <SimpleGrid key={username} cols={2} spacing="sm">
-                    <Paper p="md" radius="md" withBorder bg="gray.0">
+                    <Paper p="md" radius="md" withBorder bg="var(--mantine-color-default-hover)">
                       <Group gap="xl" align="center" wrap="nowrap">
                         <ActionIcon
                           size="xl"
@@ -370,7 +370,7 @@ export default function MinimalPairs() {
                         </Group>
                       </Group>
                     </Paper>
-                    <Paper p="md" radius="md" withBorder bg="gray.0">
+                    <Paper p="md" radius="md" withBorder bg="var(--mantine-color-default-hover)">
                       <Group gap="xl" align="center" wrap="nowrap">
                         <ActionIcon
                           size="xl"
@@ -427,7 +427,7 @@ export default function MinimalPairs() {
                     {leftOnlySorted.map((pron, sortedIdx) => {
                       const idx = leftOnlyIndices[sortedIdx];
                       return (
-                        <Paper key={idx} p="md" radius="md" withBorder bg="gray.0">
+                        <Paper key={idx} p="md" radius="md" withBorder bg="var(--mantine-color-default-hover)">
                           <Group gap="xl" align="center" wrap="nowrap">
                             <ActionIcon
                               size="xl"
@@ -475,7 +475,7 @@ export default function MinimalPairs() {
                     {rightOnlySorted.map((pron, sortedIdx) => {
                       const idx = rightOnlyIndices[sortedIdx];
                       return (
-                        <Paper key={idx} p="md" radius="md" withBorder bg="gray.0">
+                        <Paper key={idx} p="md" radius="md" withBorder bg="var(--mantine-color-default-hover)">
                           <Group gap="xl" align="center" wrap="nowrap">
                             <ActionIcon
                               size="xl"
@@ -633,12 +633,12 @@ export default function MinimalPairs() {
         ) : currentEntity ? (
           <>
             <SimpleGrid cols={2} spacing="lg">
-              <Paper p="xl" radius="md" withBorder bg="blue.0">
+              <Paper p="xl" radius="md" withBorder bg="var(--mantine-color-blue-light)">
                 <Text size="xl" fw={600} ta="center" style={{ lineHeight: 1.6 }}>
                   {leftText}
                 </Text>
               </Paper>
-              <Paper p="xl" radius="md" withBorder bg="blue.0">
+              <Paper p="xl" radius="md" withBorder bg="var(--mantine-color-blue-light)">
                 <Text size="xl" fw={600} ta="center" style={{ lineHeight: 1.6 }}>
                   {rightText}
                 </Text>

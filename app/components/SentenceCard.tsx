@@ -22,7 +22,7 @@ export function SentenceCard({ phrase, onSelectWords, selectedWords }: SentenceC
   const [localSelectedWords, setLocalSelectedWords] = useState<string[]>([]);
 
   return (
-    <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
+    <Paper p="xl" radius="lg" shadow="sm" className="border border-gray-100 dark:border-gray-800">
       <Stack gap="lg">
         <div>
           <Text size="sm" c="dimmed" mb="md" className="flex items-center gap-2">
@@ -30,7 +30,7 @@ export function SentenceCard({ phrase, onSelectWords, selectedWords }: SentenceC
           </Text>
           <Paper 
             p="lg" 
-            className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200" 
+            className="bg-gradient-to-br from-gray-50 to-slate-50 border border-gray-200 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700"
             radius="md" 
             style={{ lineHeight: 2, minHeight: "100px", display: "flex", alignItems: "center" }}
           >
@@ -58,7 +58,7 @@ export function SentenceCard({ phrase, onSelectWords, selectedWords }: SentenceC
         </div>
 
         {localSelectedWords.length > 0 && (
-          <Group justify="flex-end" className="pt-2 border-t border-gray-100">
+          <Group justify="flex-end" className="pt-2 border-t border-gray-100 dark:border-gray-800">
             <Button 
               variant="light" 
               onClick={() => setLocalSelectedWords([])}

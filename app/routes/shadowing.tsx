@@ -483,7 +483,7 @@ export default function Shadowing() {
           </Paper>
         ) : currentEntity ? (
           <>
-            <Paper p="xl" radius="md" withBorder bg="blue.0" style={{ position: "relative" }}>
+            <Paper p="xl" radius="md" withBorder bg="var(--mantine-color-blue-light)" style={{ position: "relative" }}>
               <ActionIcon
                 variant={isFavourite ? "filled" : "subtle"}
                 color="red"
@@ -564,7 +564,7 @@ export default function Shadowing() {
               <Stack gap="sm">
                 {currentEntity.pronunciations && currentEntity.pronunciations.length > 0 ? (
                   currentEntity.pronunciations.map((pronunciation: Pronunciation, index: number) => (
-                    <Paper key={index} p="md" radius="md" withBorder bg="gray.0">
+                    <Paper key={index} p="md" radius="md" withBorder bg="var(--mantine-color-default-hover)">
                       <Group gap="xl" align="center" wrap="nowrap">
                         <ActionIcon
                           size="xl"

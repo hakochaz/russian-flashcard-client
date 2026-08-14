@@ -165,7 +165,7 @@ export default function CreateGrammar() {
                 </Text>
                 <Paper 
                   p="md" 
-                  bg="gray.0" 
+                  bg="var(--mantine-color-default-hover)" 
                   radius="sm" 
                   style={{ lineHeight: 1.8, minHeight: "80px", display: "flex", alignItems: "center" }}
                 >
@@ -219,7 +219,7 @@ export default function CreateGrammar() {
                 <Text size="sm" c="dimmed" mb="xs">
                   Bracketed Sentence:
                 </Text>
-                <Paper p="md" bg="gray.0" radius="sm">
+                <Paper p="md" bg="var(--mantine-color-default-hover)" radius="sm">
                   <Group justify="space-between" align="center">
                     <Text fw={500}>{result.bracketedSentence}</Text>
                     <CopyButton value={result.bracketedSentence}>
@@ -243,7 +243,7 @@ export default function CreateGrammar() {
                 <Text size="sm" c="dimmed" mb="xs">
                   Phrase Answer:
                 </Text>
-                <Paper p="md" bg="gray.0" radius="sm">
+                <Paper p="md" bg="var(--mantine-color-default-hover)" radius="sm">
                   <Group justify="space-between" align="center">
                     <Text fw={500}>{result.phraseAnswerStress}</Text>
                     <CopyButton value={result.phraseAnswerStress}>
@@ -267,7 +267,7 @@ export default function CreateGrammar() {
                 <Text size="sm" c="dimmed" mb="xs">
                   Audio:
                 </Text>
-                <Paper p="md" bg="gray.0" radius="sm">
+                <Paper p="md" bg="var(--mantine-color-default-hover)" radius="sm">
                   <Group justify="space-between" align="center" wrap="nowrap">
                     <audio controls style={{ flex: 1 }}>
                       <source src={result.audioUrl} type="audio/mpeg" />

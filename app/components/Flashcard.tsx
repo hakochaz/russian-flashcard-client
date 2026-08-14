@@ -69,9 +69,9 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
   };
 
   return (
-    <Paper p="xl" radius="lg" shadow="sm" className="bg-white border border-gray-100">
+    <Paper p="xl" radius="lg" shadow="sm" className="border border-gray-100 dark:border-gray-800">
       <Stack gap="lg">
-        <Group justify="space-between" align="center" className="pb-4 border-b border-gray-100">
+        <Group justify="space-between" align="center" className="pb-4 border-b border-gray-100 dark:border-gray-800">
           <Button
             variant="light"
             onClick={onBack}
@@ -80,8 +80,8 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
           >
             Back to Sentence
           </Button>
-          <div className="px-3 py-1.5 bg-blue-50 rounded-full">
-            <Text size="sm" fw={600} c="blue.7">
+          <div className="px-3 py-1.5 rounded-full" style={{ background: "var(--mantine-color-blue-light)" }}>
+            <Text size="sm" fw={600} style={{ color: "var(--mantine-color-blue-light-color)" }}>
               {selectedWord}
             </Text>
           </div>
@@ -97,9 +97,9 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
             <Group align="flex-start" gap="sm" grow>
               <div>
                 <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Base Form</Text>
-                <Paper p="sm" className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100" radius="md">
+                <Paper p="sm" className="border" style={{ background: "var(--mantine-color-blue-light)", borderColor: "var(--mantine-color-blue-light)" }} radius="md">
                   <Group justify="space-between" align="center">
-                    <Text fw={600} size="md" c="blue.9">{wordData.baseFormStress || wordData.baseForm}</Text>
+                    <Text fw={600} size="md" style={{ color: "var(--mantine-color-blue-light-color)" }}>{wordData.baseFormStress || wordData.baseForm}</Text>
                     <CopyButton value={wordData.baseFormStress || wordData.baseForm}>
                       {({ copied, copy }) => (
                         <Tooltip label={copied ? "Copied" : "Copy"} withArrow position="left">
@@ -114,7 +114,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
               </div>
               <div>
                 <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">English Translation</Text>
-                <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+                <Paper p="sm" className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700" radius="md">
                   <Group justify="space-between" align="center">
                     <Text fw={500} size="md">{wordData.englishTranslation}</Text>
                     <CopyButton value={wordData.englishTranslation}>
@@ -134,7 +134,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
             {/* Russian Meaning — full width */}
             <div>
               <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Russian Meaning</Text>
-              <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+              <Paper p="sm" className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700" radius="md">
                 <Group justify="space-between" align="flex-start">
                   <Text fw={500} size="md" style={{ flex: 1 }}>{wordData.russianMeaning}</Text>
                   <CopyButton value={wordData.russianMeaning}>
@@ -154,7 +154,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
             <Group align="flex-start" gap="sm" grow>
               <div>
                 <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Phrase</Text>
-                <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+                <Paper p="sm" className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700" radius="md">
                   <Group justify="space-between" align="center">
                     <Text fw={500} size="md">{phrase.Phrase}</Text>
                     <CopyButton value={phrase.Phrase}>
@@ -171,7 +171,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
               </div>
               <div>
                 <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Phrase with Stress</Text>
-                <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+                <Paper p="sm" className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700" radius="md">
                   <Group justify="space-between" align="center">
                     <Text fw={500} size="md">{phrase.PhraseStress}</Text>
                     <CopyButton value={phrase.PhraseStress}>
@@ -192,7 +192,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
             <Group align="flex-end" gap="sm" grow>
               <div>
                 <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Audio</Text>
-                <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+                <Paper p="sm" className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700" radius="md">
                   <Group justify="space-between" align="center" wrap="nowrap">
                     <audio controls style={{ flex: 1 }} className="h-8">
                       <source src={phrase.Audio} type="audio/mpeg" />
@@ -212,7 +212,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
               </div>
               <div>
                 <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Image</Text>
-                <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+                <Paper p="sm" className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700" radius="md">
                   <Group gap="xs" wrap="nowrap">
                     {localImageBase64 ? (
                       <Group gap="xs" style={{ flex: 1 }} align="center" wrap="nowrap">
@@ -258,7 +258,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
             {/* Custom prompt image generation */}
             <div>
               <Text size="xs" tt="uppercase" fw={600} c="dimmed" mb={4} className="tracking-wider">Custom Image Prompt</Text>
-              <Paper p="sm" className="bg-gray-50 border border-gray-200" radius="md">
+              <Paper p="sm" className="bg-gray-50 border border-gray-200 dark:bg-gray-800 dark:border-gray-700" radius="md">
                 <Group gap="xs" wrap="nowrap">
                   <TextInput
                     placeholder="Describe the image you want to generate..."

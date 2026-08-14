@@ -50,19 +50,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initializedRef = useRef(false);
   const interactionLockRef = useRef(false);
   const redirectProcessingRef = useRef(false);
+  let recoveryFailed = false;
   const [account, setAccount] = useState<AccountInfo | null>(() => {
     try {
       const accounts = msalInstance.getAllAccounts();
       return accounts.length ? accounts[0] : null;
     } catch (err) {
       console.error("MSAL getAllAccounts error", err);
-      // If MSAL state is corrupt, clear storage and reload
-      window.localStorage.clear();
-      window.sessionStorage.clear();
-      window.location.reload();
+      // Only attempt the clear-storage-and-reload recovery once. Without this
+      // guard, an error that isn't actually fixed by clearing storage (e.g. a
+      // stale JS chunk loaded mid-deploy) causes an infinite reload loop.
+      const alreadyAttempted = window.sessionStorage.getItem("msal-cache-recovery-attempted") === "true";
+      if (!alreadyAttempted) {
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+        window.sessionStorage.setItem("msal-cache-recovery-attempted", "true");
+        window.location.reload();
+      } else {
+        console.error("MSAL cache recovery already attempted once and failed again; not reloading again.");
+        recoveryFailed = true;
+      }
       return null;
     }
   });
+  const [cacheRecoveryFailed] = useState(recoveryFailed);
   const [redirecting, setRedirecting] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const hasRedirected = useRef(false);
@@ -70,6 +81,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // handle redirect response and auto-start login if no account
   useEffect(() => {
     let mounted = true;
+
+    if (cacheRecoveryFailed) {
+      setIsInitializing(false);
+      return;
+    }
 
     (async () => {
       try {
@@ -89,6 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await msalInstance.handleRedirectPromise();
         if (!mounted) return;
         if (res && res.account) {
+          window.sessionStorage.removeItem("msal-cache-recovery-attempted");
           setAccount(res.account);
           setRedirecting(false);
           setIsInitializing(false);
@@ -99,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const accounts = msalInstance.getAllAccounts();
         if (accounts.length) {
+          window.sessionStorage.removeItem("msal-cache-recovery-attempted");
           setAccount(accounts[0]);
           setRedirecting(false);
           setIsInitializing(false);
@@ -270,6 +288,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     acquireToken,
   }), [account, login, logout, acquireToken]);
+
+  if (cacheRecoveryFailed) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        backgroundColor: '#fff',
+        padding: '24px',
+        textAlign: 'center',
+      }}>
+        <p>Sign-in is stuck in a broken state that an automatic retry couldn't fix.</p>
+        <button
+          onClick={() => {
+            window.sessionStorage.removeItem("msal-cache-recovery-attempted");
+            window.location.reload();
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   if (isInitializing || redirecting) {
     return (

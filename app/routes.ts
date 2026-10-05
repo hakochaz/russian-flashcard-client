@@ -11,4 +11,5 @@ export default [
   { file: "routes/shadowing.tsx", path: "/shadowing" },
   { file: "routes/letters.tsx", path: "/letters" },
   { file: "routes/minimal-pairs.tsx", path: "/minimal-pairs" },
+  { file: "routes/lr-stress-marks.tsx", path: "/anki-tools/lr-stress-marks" },
 ] satisfies RouteConfig;

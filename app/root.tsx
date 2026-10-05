@@ -51,6 +51,28 @@ function Navigation() {
     { to: "/minimal-pairs", label: "Minimal Pairs", icon: "👂" },
   ];
 
+  const ankiToolItems = [
+    { to: "/anki-tools/lr-stress-marks", label: "LR Russian Stress Marks", icon: "✍️" },
+  ];
+
+  const renderNavLink = ({ to, label, icon }: { to: string; label: string; icon: string }) => {
+    const isActive = location.pathname === to;
+    return (
+      <Link
+        key={to}
+        to={to}
+        className={`px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-200 group ${
+          isActive
+            ? 'bg-blue-50 text-blue-700 font-medium shadow-sm dark:bg-blue-950 dark:text-blue-300'
+            : 'text-gray-700 hover:bg-gray-50 hover:translate-x-0.5 dark:text-gray-300 dark:hover:bg-gray-800'
+        }`}
+      >
+        <span className="text-lg">{icon}</span>
+        <span className="text-sm">{label}</span>
+      </Link>
+    );
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -62,23 +84,12 @@ function Navigation() {
   return (
     <div className="flex flex-col h-full">
       <nav className="mt-6 flex flex-col gap-1 flex-1">
-        {navItems.map(({ to, label, icon }) => {
-          const isActive = location.pathname === to;
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={`px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all duration-200 group ${
-                isActive
-                  ? 'bg-blue-50 text-blue-700 font-medium shadow-sm dark:bg-blue-950 dark:text-blue-300'
-                  : 'text-gray-700 hover:bg-gray-50 hover:translate-x-0.5 dark:text-gray-300 dark:hover:bg-gray-800'
-              }`}
-            >
-              <span className="text-lg">{icon}</span>
-              <span className="text-sm">{label}</span>
-            </Link>
-          );
-        })}
+        {navItems.map(renderNavLink)}
+
+        <Text size="xs" tt="uppercase" fw={600} c="dimmed" className="px-3 pt-5 pb-1 tracking-wider">
+          Anki Tools
+        </Text>
+        {ankiToolItems.map(renderNavLink)}
       </nav>
       
       {/* Logout section at bottom */}

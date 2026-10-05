@@ -473,7 +473,7 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                   },
                 });
               }
-              // 2. addNote payload (field order: Word, Translation, Meaning, Context, Context Stress, Context Audio, Image)
+              // 2. addNote payload (field order: Word, Translation, Meaning, Context, Context Stress, Context Audio, Image, Vocab?, Context Target)
               const addNotePayload = {
                 action: "addNote",
                 version: 6,
@@ -491,6 +491,8 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                       "Context Audio": `[sound:${filename}]`,
                       Image: (localImageUrl || localImageBase64) && imageFilename ? `<img src='${imageFilename}'>` : "",
                       "Vocab?": "",
+                      // The word form as it appears in the sentence, minus surrounding punctuation
+                      "Context Target": selectedWord.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""),
                     },
                     tags: ["generated"],
                   },

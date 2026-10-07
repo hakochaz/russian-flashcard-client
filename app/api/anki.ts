@@ -51,4 +51,10 @@ export async function updateNoteFields(noteId: number, fields: Record<string, st
   await ankiInvoke<null>("updateNoteFields", { note: { id: noteId, fields } });
 }
 
+// Tags are space-separated in AnkiConnect
+export async function addTags(noteIds: number[], tags: string): Promise<void> {
+  if (noteIds.length === 0) return;
+  await ankiInvoke<null>("addTags", { notes: noteIds, tags });
+}
+
 export type { AnkiNoteInfo, AnkiNoteField };

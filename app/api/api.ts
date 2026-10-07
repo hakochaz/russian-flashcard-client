@@ -356,6 +356,27 @@ export async function synthesizeSentenceAudio(sentence: string, bearerToken?: st
   }
 }
 
+// API function to look up a word's lexicon base word (e.g. aspect pair or noun metadata).
+// Returns null when the lexicon has no match (404); throws on any other error so callers can retry.
+export async function lexiconSearch(word: string, bearerToken?: string): Promise<string | null> {
+  const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/lexicon-search`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    mode: 'cors',
+    headers,
+    body: JSON.stringify({ word }),
+  });
+
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Lexicon search failed: ${response.status}`);
+
+  const data = await response.json();
+  return data.baseWord || null;
+}
+
 // API function to get sentence with stress marks
 export async function getStressedSentence(sentence: string, bearerToken?: string): Promise<string | null> {
   try {

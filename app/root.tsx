@@ -53,6 +53,7 @@ function Navigation() {
 
   const ankiToolItems = [
     { to: "/anki-tools/lr-stress-marks", label: "LR Russian Stress Marks", icon: "✍️" },
+    { to: "/anki-tools/lr-word-metadata", label: "LR Word Metadata", icon: "🏷️" },
   ];
 
   const renderNavLink = ({ to, label, icon }: { to: string; label: string; icon: string }) => {

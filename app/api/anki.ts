@@ -57,4 +57,14 @@ export async function addTags(noteIds: number[], tags: string): Promise<void> {
   await ankiInvoke<null>("addTags", { notes: noteIds, tags });
 }
 
+export async function deleteNotes(noteIds: number[]): Promise<void> {
+  if (noteIds.length === 0) return;
+  await ankiInvoke<null>("deleteNotes", { notes: noteIds });
+}
+
+// Anki downloads the file from the URL itself; returns the stored filename
+export async function storeMediaFileFromUrl(filename: string, url: string): Promise<string> {
+  return ankiInvoke<string>("storeMediaFile", { filename, url });
+}
+
 export type { AnkiNoteInfo, AnkiNoteField };

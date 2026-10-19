@@ -13,4 +13,5 @@ export default [
   { file: "routes/minimal-pairs.tsx", path: "/minimal-pairs" },
   { file: "routes/lr-stress-marks.tsx", path: "/anki-tools/lr-stress-marks" },
   { file: "routes/lr-word-metadata.tsx", path: "/anki-tools/lr-word-metadata" },
+  { file: "routes/lr-sentence-cleanup.tsx", path: "/anki-tools/lr-sentence-cleanup" },
 ] satisfies RouteConfig;

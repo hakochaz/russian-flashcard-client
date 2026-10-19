@@ -377,6 +377,32 @@ export async function lexiconSearch(word: string, bearerToken?: string): Promise
   return data.baseWord || null;
 }
 
+type TrimClozeResult =
+  | { status: "unchanged" }
+  | { status: "changed"; cloze: string; sentence: string; sentenceStress: string; translation: string | null }
+  | { status: "insufficientContext"; reason: string | null };
+
+// API function to trim dangling fragments from a cloze sentence; throws on any non-200 so callers can retry
+export async function trimCloze(cloze: string, bearerToken?: string): Promise<TrimClozeResult> {
+  const url = `${apiBaseUrl.replace(/\/$/, "")}/api/russian/trim-cloze`;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    mode: 'cors',
+    headers,
+    body: JSON.stringify({ cloze }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error || `Trim cloze failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 // API function to get sentence with stress marks
 export async function getStressedSentence(sentence: string, bearerToken?: string): Promise<string | null> {
   try {
@@ -872,4 +898,5 @@ export type {
   ShadowingFavouriteResponse,
   MinimalPairsEntity,
   MinimalPairsCreateResponse,
+  TrimClozeResult,
 };

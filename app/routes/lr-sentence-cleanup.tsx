@@ -1,5 +1,5 @@
 import type { Route } from "./+types/lr-sentence-cleanup";
-import { Container, Title, Text, Button, Paper, Group, Stack, Alert, Progress, Loader, SimpleGrid, Badge } from "@mantine/core";
+import { Container, Title, Text, Button, Paper, Group, Stack, Alert, Progress, Loader, SimpleGrid, Badge, Switch } from "@mantine/core";
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { isAnkiConnectAvailable, findNotes, notesInfo, updateNoteFields, addTags, deleteNotes, storeMediaFileFromUrl } from "../api/anki";
 import { trimCloze, synthesizeSentenceAudio, type TrimClozeResult } from "../api/api";
@@ -15,6 +15,7 @@ const SUBTITLE_FIELD = "Subtitle";
 const TRANSLATION_FIELD = "Translation";
 const SENTENCE_STRESS_FIELD = "Sentence Stress";
 const AUDIO_FIELD = "Audio Clip";
+const SOURCE_FIELD = "Source";
 // Added to every note the user has accepted (changed or not), so it is never reviewed again
 const CHECKED_TAG = "lr-cloze-checked";
 const CLOZE_MARKER = /\{\{c\d+::/;
@@ -51,7 +52,7 @@ function fieldToText(html: string | undefined): string {
   return (doc.body.textContent ?? "").replace(/ /g, " ").trim();
 }
 
-async function scanDeck(): Promise<ScanResult> {
+async function scanDeck(youtubeOnly: boolean): Promise<ScanResult> {
   const [allIds, checkedIds, uncheckedIds] = await Promise.all([
     findNotes(DECK_QUERY),
     findNotes(`${DECK_QUERY} tag:${CHECKED_TAG}`),
@@ -63,6 +64,7 @@ async function scanDeck(): Promise<ScanResult> {
   for (const note of notes) {
     const cloze = fieldToText(note.fields[CLOZE_FIELD]?.value);
     if (!CLOZE_MARKER.test(cloze)) continue;
+    if (youtubeOnly && !/youtube/i.test(fieldToText(note.fields[SOURCE_FIELD]?.value))) continue;
     pending.push({
       noteId: note.noteId,
       cloze,
@@ -115,6 +117,7 @@ export default function LrSentenceCleanup() {
   const [applying, setApplying] = useState(0);
   const [stats, setStats] = useState({ unchanged: 0, changed: 0, deleted: 0, skipped: 0 });
   const [failed, setFailed] = useState<FailedApply[]>([]);
+  const [youtubeOnly, setYoutubeOnly] = useState(true);
 
   const { acquireToken } = useAuth();
 
@@ -128,7 +131,7 @@ export default function LrSentenceCleanup() {
         setScan(null);
         return;
       }
-      setScan(await scanDeck());
+      setScan(await scanDeck(youtubeOnly));
       setIndex(0);
       setTrims({});
       requested.current.clear();
@@ -137,8 +140,9 @@ export default function LrSentenceCleanup() {
     } finally {
       setIsScanning(false);
     }
-  }, []);
+  }, [youtubeOnly]);
 
+  // Rescans whenever the YouTube filter is toggled
   useEffect(() => {
     checkAndScan();
   }, [checkAndScan]);
@@ -226,6 +230,13 @@ export default function LrSentenceCleanup() {
             enough context are deleted on accept. Accepted notes are tagged <code>{CHECKED_TAG}</code> and skipped next time.
           </Text>
         </div>
+
+        <Switch
+          label="Only clean up notes with Source = YouTube"
+          checked={youtubeOnly}
+          onChange={e => setYoutubeOnly(e.currentTarget.checked)}
+          disabled={isScanning || applying > 0}
+        />
 
         {ankiAvailable === false && (
           <Alert color="red" title="AnkiConnect not available">

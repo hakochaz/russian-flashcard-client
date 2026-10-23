@@ -55,6 +55,7 @@ function Navigation() {
     { to: "/anki-tools/lr-stress-marks", label: "LR Russian Stress Marks", icon: "✍️" },
     { to: "/anki-tools/lr-word-metadata", label: "LR Word Metadata", icon: "🏷️" },
     { to: "/anki-tools/lr-sentence-cleanup", label: "LR Sentence Clean Up", icon: "✂️" },
+    { to: "/anki-tools/generate-audio-cards", label: "Generate Audio Cards", icon: "🔊" },
   ];
 
   const renderNavLink = ({ to, label, icon }: { to: string; label: string; icon: string }) => {

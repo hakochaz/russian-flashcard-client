@@ -67,4 +67,16 @@ export async function storeMediaFileFromUrl(filename: string, url: string): Prom
   return ankiInvoke<string>("storeMediaFile", { filename, url });
 }
 
+// Returns the new note's ID
+export async function addNote(deckName: string, modelName: string, fields: Record<string, string>, tags: string[] = []): Promise<number> {
+  return ankiInvoke<number>("addNote", {
+    note: { deckName, modelName, fields, tags, options: { allowDuplicate: true } },
+  });
+}
+
+// Returns the file's contents base64-encoded, or false if it does not exist
+export async function retrieveMediaFile(filename: string): Promise<string | false> {
+  return ankiInvoke<string | false>("retrieveMediaFile", { filename });
+}
+
 export type { AnkiNoteInfo, AnkiNoteField };

@@ -7,8 +7,9 @@ export function meta({}: Route.MetaArgs) {
   return [{ title: "Generate Audio Cards" }];
 }
 
-// Grammar cards use a different note type, so filtering on Sentence Card excludes them
-const SOURCE_QUERY = 'deck:"Master Deck::Russian Deck" note:"Sentence Card"';
+// Grammar cards use a different note type, so filtering on Sentence Card excludes them.
+// tts-audio marks notes whose audio is Azure TTS (16 kHz MP3) rather than a native speaker
+const SOURCE_QUERY = 'deck:"Master Deck::Russian Deck" note:"Sentence Card" -tag:tts-audio';
 const TARGET_DECK = "Master Deck::Audio Cards";
 const TARGET_MODEL = "Audio Card";
 const WORD_FIELD = "Word";
@@ -17,10 +18,8 @@ const AUDIO_FIELD = "Context Audio";
 // Added to the source Sentence Card so it is never reviewed again
 const CREATED_TAG = "audio-card-created";
 const SKIPPED_TAG = "audio-card-skipped";
-// Notes are loaded in batches since the deck holds thousands of sentence cards
-const BATCH_SIZE = 25;
-// Load the next batch once the review gets this close to the end of the loaded notes
-const LOAD_MORE_THRESHOLD = 5;
+// notesInfo is called in chunks since the deck holds thousands of sentence cards
+const NOTES_INFO_CHUNK = 500;
 // How many notes ahead of the current one to fetch audio for
 const PREFETCH_AHEAD = 2;
 
@@ -31,13 +30,18 @@ interface PendingNote {
   audioFilename: string | null;
   // Copied verbatim to the new Audio Card, which has the same fields as a Sentence Card
   fields: Record<string, string>;
+  // Other pending notes with the same sentence; they get the same tag since the audio is what matters
+  duplicates: { noteId: number; word: string }[];
 }
 
 interface ScanResult {
   total: number;
   created: number;
   skipped: number;
-  pendingIds: number[];
+  // Pending notes tagged during the scan because their sentence was already decided
+  autoTagged: number;
+  // One entry per distinct sentence
+  queue: PendingNote[];
 }
 
 type AudioState =
@@ -57,21 +61,16 @@ function fieldToText(html: string | undefined): string {
   return (doc.body.textContent ?? "").replace(/ /g, " ").trim();
 }
 
-async function scanDeck(): Promise<ScanResult> {
-  const [allIds, createdIds, skippedIds, pendingIds] = await Promise.all([
-    findNotes(SOURCE_QUERY),
-    findNotes(`${SOURCE_QUERY} tag:${CREATED_TAG}`),
-    findNotes(`${SOURCE_QUERY} tag:${SKIPPED_TAG}`),
-    // Notes without audio can't make an audio card
-    findNotes(`${SOURCE_QUERY} -tag:${CREATED_TAG} -tag:${SKIPPED_TAG} "${AUDIO_FIELD}:_*"`),
-  ]);
-  // Note IDs are creation timestamps, so this reviews oldest notes first
-  pendingIds.sort((a, b) => a - b);
-  return { total: allIds.length, created: createdIds.length, skipped: skippedIds.length, pendingIds };
+// Compared on plain text so differing markup (e.g. the bolded target word) doesn't stop a match
+function sentenceKey(context: string): string {
+  return context.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 async function loadNotes(noteIds: number[]): Promise<PendingNote[]> {
-  const notes = await notesInfo(noteIds);
+  const notes = [];
+  for (let i = 0; i < noteIds.length; i += NOTES_INFO_CHUNK) {
+    notes.push(...await notesInfo(noteIds.slice(i, i + NOTES_INFO_CHUNK)));
+  }
   return notes.map(note => {
     const fields = Object.fromEntries(Object.entries(note.fields).map(([name, field]) => [name, field.value]));
     return {
@@ -80,8 +79,46 @@ async function loadNotes(noteIds: number[]): Promise<PendingNote[]> {
       context: fieldToText(fields[CONTEXT_FIELD]),
       audioFilename: fields[AUDIO_FIELD]?.match(/\[sound:(.+?)\]/)?.[1] ?? null,
       fields,
+      duplicates: [],
     };
   });
+}
+
+async function scanDeck(): Promise<ScanResult> {
+  const [allIds, createdIds, skippedIds, pendingIds] = await Promise.all([
+    findNotes(SOURCE_QUERY),
+    findNotes(`${SOURCE_QUERY} tag:${CREATED_TAG}`),
+    findNotes(`${SOURCE_QUERY} tag:${SKIPPED_TAG}`),
+    // Notes without audio can't make an audio card
+    findNotes(`${SOURCE_QUERY} -tag:${CREATED_TAG} -tag:${SKIPPED_TAG} "${AUDIO_FIELD}:_*"`),
+  ]);
+  const [pending, created, skipped] = await Promise.all([loadNotes(pendingIds), loadNotes(createdIds), loadNotes(skippedIds)]);
+
+  // Sentences decided in an earlier session; created wins if the same sentence was both created and skipped
+  const createdKeys = new Set(created.map(n => sentenceKey(n.context)));
+  const skippedKeys = new Set(skipped.map(n => sentenceKey(n.context)));
+  const autoCreated: number[] = [];
+  const autoSkipped: number[] = [];
+
+  // Note IDs are creation timestamps, so this reviews oldest notes first and the oldest note represents its sentence
+  pending.sort((a, b) => a.noteId - b.noteId);
+  const groups = new Map<string, PendingNote>();
+  for (const note of pending) {
+    const key = sentenceKey(note.context);
+    if (createdKeys.has(key)) autoCreated.push(note.noteId);
+    else if (skippedKeys.has(key)) autoSkipped.push(note.noteId);
+    else if (groups.has(key)) groups.get(key)!.duplicates.push({ noteId: note.noteId, word: note.word });
+    else groups.set(key, note);
+  }
+  await Promise.all([addTags(autoCreated, CREATED_TAG), addTags(autoSkipped, SKIPPED_TAG)]);
+
+  return {
+    total: allIds.length,
+    created: createdIds.length + autoCreated.length,
+    skipped: skippedIds.length + autoSkipped.length,
+    autoTagged: autoCreated.length + autoSkipped.length,
+    queue: [...groups.values()],
+  };
 }
 
 export default function GenerateAudioCards() {
@@ -89,9 +126,6 @@ export default function GenerateAudioCards() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scan, setScan] = useState<ScanResult | null>(null);
-  const [notes, setNotes] = useState<PendingNote[]>([]);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [audio, setAudio] = useState<Record<number, AudioState>>({});
   const requested = useRef(new Set<number>());
@@ -110,10 +144,8 @@ export default function GenerateAudioCards() {
         return;
       }
       setScan(await scanDeck());
-      setNotes([]);
       setIndex(0);
       setAudio({});
-      setLoadError(null);
       requested.current.clear();
     } catch (error) {
       setScanError(error instanceof Error ? error.message : String(error));
@@ -126,27 +158,7 @@ export default function GenerateAudioCards() {
     checkAndScan();
   }, [checkAndScan]);
 
-  const pendingIds = scan?.pendingIds ?? [];
-  const hasMore = notes.length < pendingIds.length;
-
-  const loadMore = useCallback(async () => {
-    setIsLoadingMore(true);
-    setLoadError(null);
-    try {
-      const batch = await loadNotes(pendingIds.slice(notes.length, notes.length + BATCH_SIZE));
-      setNotes(prev => [...prev, ...batch]);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [pendingIds, notes.length]);
-
-  // Loads the next batch as the review nears the end of the loaded notes
-  useEffect(() => {
-    if (!hasMore || isLoadingMore || loadError) return;
-    if (notes.length - index <= LOAD_MORE_THRESHOLD) loadMore();
-  }, [hasMore, isLoadingMore, loadError, notes.length, index, loadMore]);
+  const notes = scan?.queue ?? [];
 
   const requestAudio = useCallback(async (note: PendingNote) => {
     requested.current.add(note.noteId);
@@ -171,12 +183,13 @@ export default function GenerateAudioCards() {
   const applyDecision = async (note: PendingNote, create: boolean) => {
     setApplying(n => n + 1);
     try {
+      const noteIds = [note.noteId, ...note.duplicates.map(d => d.noteId)];
       if (create) {
         await addNote(TARGET_DECK, TARGET_MODEL, note.fields);
-        await addTags([note.noteId], CREATED_TAG);
+        await addTags(noteIds, CREATED_TAG);
         setStats(s => ({ ...s, created: s.created + 1 }));
       } else {
-        await addTags([note.noteId], SKIPPED_TAG);
+        await addTags(noteIds, SKIPPED_TAG);
         setStats(s => ({ ...s, skipped: s.skipped + 1 }));
       }
     } catch (error) {
@@ -198,7 +211,7 @@ export default function GenerateAudioCards() {
   };
 
   const reviewed = stats.created + stats.skipped;
-  const isFinished = scan && !current && !hasMore;
+  const isFinished = scan && !current;
 
   return (
     <Container size="md">
@@ -209,7 +222,8 @@ export default function GenerateAudioCards() {
           <Text c="dimmed" size="sm" mt={4}>
             Steps through Sentence Cards in <code>Master Deck::Russian Deck</code> one at a time. Creating copies the note's
             fields into a new <code>{TARGET_MODEL}</code> note in <code>{TARGET_DECK}</code>. The source note is tagged{" "}
-            <code>{CREATED_TAG}</code> or <code>{SKIPPED_TAG}</code> so it is not shown again.
+            <code>{CREATED_TAG}</code> or <code>{SKIPPED_TAG}</code> so it is not shown again. Cards sharing the same
+            sentence are shown once and all get the same tag.
           </Text>
         </div>
 
@@ -257,17 +271,23 @@ export default function GenerateAudioCards() {
               <Text size="xl" fw={700}>{scan.skipped}</Text>
             </Paper>
             <Paper withBorder p="md" radius="md">
-              <Text size="xs" tt="uppercase" fw={600} c="dimmed">To review</Text>
-              <Text size="xl" fw={700} c={pendingIds.length > 0 ? "orange" : undefined}>{pendingIds.length}</Text>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">Sentences to review</Text>
+              <Text size="xl" fw={700} c={notes.length > 0 ? "orange" : undefined}>{notes.length}</Text>
             </Paper>
           </SimpleGrid>
         )}
 
-        {scan && pendingIds.length > 0 && (
+        {scan && scan.autoTagged > 0 && (
+          <Alert color="blue">
+            Tagged {scan.autoTagged} {scan.autoTagged === 1 ? "card" : "cards"} whose sentence was already reviewed.
+          </Alert>
+        )}
+
+        {scan && notes.length > 0 && (
           <Stack gap={4}>
-            <Progress value={(index / pendingIds.length) * 100} />
+            <Progress value={(index / notes.length) * 100} />
             <Group justify="space-between">
-              <Text size="sm" c="dimmed">{Math.min(index + 1, pendingIds.length)} / {pendingIds.length}</Text>
+              <Text size="sm" c="dimmed">{Math.min(index + 1, notes.length)} / {notes.length}</Text>
               <Text size="sm" c="dimmed">
                 {stats.created} created · {stats.skipped} skipped
                 {applying > 0 && ` · saving ${applying}...`}
@@ -294,23 +314,19 @@ export default function GenerateAudioCards() {
           </Alert>
         )}
 
-        {loadError && (
-          <Alert color="red" title="Failed to load notes">
-            <Stack gap="sm">
-              <Text size="sm">{loadError}</Text>
-              <Group>
-                <Button size="xs" variant="light" color="red" onClick={loadMore} loading={isLoadingMore}>Retry</Button>
-              </Group>
-            </Stack>
-          </Alert>
-        )}
-
         {current && (
           <Stack gap="md">
             <Paper withBorder p="md" radius="md">
               <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={600} c="dimmed">{current.word}</Text>
+                <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                  {[current.word, ...current.duplicates.map(d => d.word)].join(" · ")}
+                </Text>
                 <Text size="lg">{current.context}</Text>
+                {current.duplicates.length > 0 && (
+                  <Text size="xs" c="dimmed">
+                    Also tags {current.duplicates.length} other {current.duplicates.length === 1 ? "card" : "cards"} with this sentence
+                  </Text>
+                )}
                 {(!currentAudio || currentAudio.state === "loading") && (
                   <Group gap="sm">
                     <Loader size="xs" />
@@ -335,19 +351,12 @@ export default function GenerateAudioCards() {
           </Stack>
         )}
 
-        {scan && !current && hasMore && !loadError && (
-          <Group gap="sm">
-            <Loader size="sm" />
-            <Text size="sm" c="dimmed">Loading notes...</Text>
-          </Group>
-        )}
-
         {isFinished && (
-          pendingIds.length > 0 ? (
+          notes.length > 0 ? (
             <Alert color={failed.length > 0 ? "orange" : "green"} title="Review complete">
               <Stack gap="sm">
                 <Text size="sm">
-                  Reviewed {reviewed} {reviewed === 1 ? "note" : "notes"}.
+                  Reviewed {reviewed} {reviewed === 1 ? "sentence" : "sentences"}.
                   {applying > 0 && ` Saving ${applying} more...`}
                 </Text>
                 <Group>

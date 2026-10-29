@@ -5,6 +5,7 @@ import { GoogleImageSearch } from "./GoogleImageSearch";
 import { useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { ankiDeckName } from "../config";
+import { createAudioCardForSentence } from "../api/anki";
 
 interface FlashcardProps {
   phrase: Phrase;
@@ -16,9 +17,11 @@ interface FlashcardProps {
   onImportDismiss?: () => void;
   isForvoAudio?: boolean;
   imageUrl?: string;
+  // Also create an Audio Card from the imported Sentence Card
+  generateAudioCard?: boolean;
 }
 
-export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, onImportSuccess, onImportDismiss, isForvoAudio = false, imageUrl }: FlashcardProps) {
+export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, onImportSuccess, onImportDismiss, isForvoAudio = false, imageUrl, generateAudioCard = false }: FlashcardProps) {
   const [localImageUrl, setLocalImageUrl] = useState(imageUrl || "");
   const [localImageBase64, setLocalImageBase64] = useState("");
   const [importError, setImportError] = useState(false);
@@ -520,6 +523,16 @@ export function Flashcard({ phrase, selectedWord, wordData, isLoading, onBack, o
                 if (!noteRes.ok) throw new Error(`addNote failed: ${noteRes.status}`);
                 const noteData = await noteRes.json();
                 if (noteData.error) throw new Error(`addNote error: ${noteData.error}`);
+
+                // An Audio Card is useless without audio, so only create one when the audio was stored
+                if (generateAudioCard && base64Audio) {
+                  try {
+                    await createAudioCardForSentence(noteData.result, addNotePayload.params.note.fields);
+                  } catch (error) {
+                    // The Sentence Card is left untagged, so it still shows up on the Generate Audio Cards page
+                    console.error("Failed to create audio card:", error);
+                  }
+                }
 
                 let deleteSuccess = false;
                 if (wordData?.baseForm) {

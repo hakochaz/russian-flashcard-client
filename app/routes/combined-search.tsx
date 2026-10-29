@@ -23,6 +23,7 @@ export default function CombinedSearch() {
   const [creatingFlashcards, setCreatingFlashcards] = useState(false);
   const [searchAllForms, setSearchAllForms] = useState(false);
   const [autoSearch, setAutoSearch] = useState(true);
+  const [generateAudioCard, setGenerateAudioCard] = useState(true);
   const [importSuccess, setImportSuccess] = useState(false);
   const [importFading, setImportFading] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
@@ -370,6 +371,11 @@ export default function CombinedSearch() {
             checked={autoSearch}
             onChange={(e) => setAutoSearch(e.currentTarget.checked)}
           />
+          <Checkbox
+            label="Generate Audio Card"
+            checked={generateAudioCard}
+            onChange={(e) => setGenerateAudioCard(e.currentTarget.checked)}
+          />
         </Group>
 
         {hasSearched && !isSearching && results.length === 0 && (
@@ -398,6 +404,7 @@ export default function CombinedSearch() {
                       onImportSuccess={handleImportSuccess}
                       onImportDismiss={handleDismissCurrentCard}
                       isForvoAudio={currentIsForvo}
+                      generateAudioCard={generateAudioCard}
                     />
 
                     <Group justify="space-between" mt="xl">

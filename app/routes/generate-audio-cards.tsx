@@ -1,7 +1,7 @@
 import type { Route } from "./+types/generate-audio-cards";
 import { Container, Title, Text, Button, Paper, Group, Stack, Alert, Progress, Loader, SimpleGrid } from "@mantine/core";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { isAnkiConnectAvailable, findNotes, notesInfo, addNote, addTags, retrieveMediaFile } from "../api/anki";
+import { isAnkiConnectAvailable, findNotes, notesInfo, addNote, addTags, retrieveMediaFile, AUDIO_CARD_DECK, AUDIO_CARD_MODEL, AUDIO_CARD_CREATED_TAG } from "../api/anki";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Generate Audio Cards" }];
@@ -10,13 +10,13 @@ export function meta({}: Route.MetaArgs) {
 // Grammar cards use a different note type, so filtering on Sentence Card excludes them.
 // tts-audio marks notes whose audio is Azure TTS (16 kHz MP3) rather than a native speaker
 const SOURCE_QUERY = 'deck:"Master Deck::Russian Deck" note:"Sentence Card" -tag:tts-audio';
-const TARGET_DECK = "Master Deck::Audio Cards";
-const TARGET_MODEL = "Audio Card";
+const TARGET_DECK = AUDIO_CARD_DECK;
+const TARGET_MODEL = AUDIO_CARD_MODEL;
 const WORD_FIELD = "Word";
 const CONTEXT_FIELD = "Context";
 const AUDIO_FIELD = "Context Audio";
 // Added to the source Sentence Card so it is never reviewed again
-const CREATED_TAG = "audio-card-created";
+const CREATED_TAG = AUDIO_CARD_CREATED_TAG;
 const SKIPPED_TAG = "audio-card-skipped";
 // notesInfo is called in chunks since the deck holds thousands of sentence cards
 const NOTES_INFO_CHUNK = 500;
